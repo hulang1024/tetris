@@ -4,6 +4,7 @@
             [tetris.core.replay :as replay]
             [tetris.core.ruleset.rotation-nrs]
             [tetris.core.ruleset.rotation-srs]
+            [tetris.core.ruleset.rotation-prs]
             [tetris.core.tick :as tick]
             [tetris.scenes.debug :as debug]
             [tetris.input.keyboard :as keyboard]

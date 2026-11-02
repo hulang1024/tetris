@@ -7,7 +7,7 @@
      :refer  [cell-empty cell-filled]
      :rename {cell-empty _ cell-filled o}]))
 
-(def ^:private piece-shapes
+(def piece-shapes
   {:s [[[_ o o] [o o _] [_ _ _]]
        [[_ o _] [_ o o] [_ _ o]]
        [[_ _ _] [_ o o] [o o _]]
@@ -70,22 +70,22 @@
    [0 3] [[0  0] [-1  0] [+2  0] [-1 +2] [+2 -1]]})
 
 (defn- wall-tick-tests [piece-kind rot target-rot]
-  (case piece-kind
-    :o [[0 0]]
+  (if (= piece-kind :o)
+    [[0 0]]
     (let [table (if (= piece-kind :i)
                   wall-tick-table-i
                   wall-tick-table-standard)]
       (get table [rot target-rot]))))
 
 (defmethod rs/shape :srs [piece]
-  ((piece-shapes (:kind piece)) (:rot piece)))
+  (get-in piece-shapes [(:kind piece) (:rot piece)]))
 
-(defn- rotate-once [state turn]
+(defn try-rotate [state turn get-tests]
   (let [{:keys [board row col current]} state
         rotated (p/rotate current turn)
-        tests (wall-tick-tests (:kind current)
-                               (:rot current)
-                               (:rot rotated))]
+        tests (get-tests (:kind current)
+                         (:rot current)
+                         (:rot rotated))]
     (when-let [[row col]
                (loop [tests tests]
                  (when tests
@@ -102,6 +102,8 @@
 
 (defmethod rs/rotate :srs [state turn]
   (case turn
-    :cw (rotate-once state :cw)
-    :ccw (rotate-once state :ccw)
-    :180 (-> state (rotate-once :cw) (rotate-once :cw))))
+    :cw (try-rotate state :cw wall-tick-tests)
+    :ccw (try-rotate state :ccw wall-tick-tests)
+    :180 (-> state
+             (try-rotate :cw wall-tick-tests)
+             (try-rotate :cw wall-tick-tests))))

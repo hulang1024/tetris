@@ -3,6 +3,7 @@
             [tetris.core.game :as game]
             [tetris.core.ruleset.rotation-nrs]
             [tetris.core.ruleset.rotation-srs]
+            [tetris.core.ruleset.rotation-prs]
             [tetris.core.tick :as tick]
             [tetris.core.replay :as replay]
             [tetris.scenes.debug :as debug]

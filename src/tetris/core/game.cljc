@@ -101,7 +101,7 @@
       {:row r :col c})))
 
 (defn- blocked? [state offset-row offset-col]
-  (assert (:current state))
+  {:pre [(some? (:current state))]}
   (let [{:keys [board row col current]} state
         row (+ row offset-row)
         col (+ col offset-col)]
@@ -125,7 +125,7 @@
         (emit-event {:type :shifted :dir dir}))))
 
 (defn- try-rotate [state turn]
-  (assert (:current state))
+  {:pre [(some? (:current state))]}
   (if-let [new-state (rs/rotate state turn)]
     (emit-event new-state {:type :rotated
                            :offset [(- (:row new-state) (:row state))
@@ -133,7 +133,7 @@
     state))
 
 (defn- lock-piece [state]
-  (assert (:current state))
+  {:pre [(some? (:current state))]}
   (let [{:keys [board current row col]} state]
     (-> (assoc state :board (b/lock-piece board current row col))
         (emit-event {:type :locked
@@ -183,7 +183,7 @@
   (assoc state :row 0 :col 3))
 
 (defn- spawn-piece [state]
-  (assert (not (:current state)))
+  {:pre [(nil? (:current state))]}
   (-> (let [q (:next-queue state)
             piece (first q)
             next-piece-id (:next-piece-id state)
@@ -199,7 +199,7 @@
       (emit-event :spawned)))
 
 (defn- try-lock [state]
-  (assert (:current state))
+  {:pre [(some? (:current state))]}
   (if (can-move-down? state)
     state
     (-> state
@@ -209,14 +209,14 @@
         (assoc :current nil))))
 
 (defn- hard-drop [state]
-  (assert (:current state))
+  {:pre [(some? (:current state))]}
   (let [{:keys [board row col current]} state
         [ghost-row] (ghost-position board current row col)]
     (-> (assoc state :row ghost-row)
         (emit-event :hard-dropped))))
 
 (defn- hold [state]
-  (assert (:current state))
+  {:pre [(some? (:current state))]}
   (if (:held? state)
     state
     (if (:hold state)

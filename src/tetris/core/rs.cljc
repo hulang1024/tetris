@@ -1,6 +1,6 @@
 (ns tetris.core.rs)
 
-(def rotation-systems [:srs :nrs-nes :nrs-game-boy :nrs-dx])
+(def rotation-systems [:srs :prs :nrs-nes :nrs-game-boy :nrs-dx])
 
 (def RotationSystem (into [:enum] rotation-systems))
 
