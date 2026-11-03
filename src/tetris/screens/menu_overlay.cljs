@@ -12,10 +12,10 @@
    :font-size "1.5rem"
    :text-align "center"
    :user-select "none"
-   :color "#aaa"})
+   :color "#999"})
 
 (defstyles base-item-hover-class [item-id]
-  {:color "#fff"
+  {:color "#111"
    :text-shadow "0 0 0.2em #fee"})
 
 (defn- handle-enter [state on-enter on-update]
@@ -64,10 +64,11 @@
   (r/with-let [state (or state (r/atom (menu/make menu-items default-hover)))
                update-state #(reset! state %)
                keydown-event-listener (fn [event]
-                                        (handle-keydown
-                                          @state
-                                          event
-                                          on-enter update-state))]
+                                        (when-not (.-repeat event) 
+                                          (handle-keydown
+                                            @state
+                                            event
+                                            on-enter update-state)))]
     (js/document.addEventListener "keydown" keydown-event-listener)
     [:div {:key (or key "menu")
            :class ["menu-overlay"

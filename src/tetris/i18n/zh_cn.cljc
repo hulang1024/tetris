@@ -18,7 +18,10 @@
           :exit-game "退出游戏"
           :continue-replay "继续回放"
           :exit-replay "退出回放"
-          :replay "观看回放"}
+          :replay "观看回放"
+          :join-room "加入房间"
+          :create-room "创建房间"
+          :list-rooms "房间列表"}
    :screen-title {:custom-controls "自定义控制"
                   :gameplay "游戏"}
    :controls-action {:soft-drop "软降"
@@ -36,6 +39,10 @@
            :password "密码"
            :button "登录"}
    :register {:button "注册"}
+   :cancel "取消"
+   :create-room {:players-max "最大人数"
+                 :is-public "公开房间"
+                 :ok "创建房间"}
    :login-message {"format-error" "用户名至少{u}位，密码至少{p}位"
                    "failed" "用户名或密码错误"}
    :register-message {"format-error" "用户名至少{u}位，密码至少{p}位"

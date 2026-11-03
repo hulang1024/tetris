@@ -4,6 +4,5 @@
 
 (defonce app
   (r/atom {:online-state :offline ; offline | logging-in | online
-           :api-token nil
            :user nil
            :stack []}))

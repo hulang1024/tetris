@@ -82,6 +82,12 @@
    :backdrop-filter "blur(0.1em)"
    :padding "1em 2em"})
 
+(defstyles menu-item-class [item-id]
+  {:color "#aaa"})
+
+(defstyles menu-item-hover-class [item-id]
+  {:color "#fff"})
+
 (defn- loading-overlay []
   [:div {:style {:z-index 3
                  :font-size 24}}
@@ -121,7 +127,9 @@
                      (assoc (:settings @this)
                             :replay-events (:replay-recorder @(:scene-state @this))))
            nil))
-       :menu-class gameplay-menu-class}]
+       :menu-class gameplay-menu-class
+       :menu-item-class menu-item-class
+       :menu-item-hover-class menu-item-hover-class}]
 
      :else nil)])
 

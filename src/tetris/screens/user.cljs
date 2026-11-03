@@ -14,6 +14,8 @@
    :height "100%"
    :display "flex"
    :text-align "center"
+   :justify-content "center"
+   :align-items "center"
    :background "rgba(0,0,0,0.1)"
    "&:hover" {:background "rgba(0,0,0,0.2)"}})
 
@@ -43,12 +45,11 @@
   (swap! app assoc :online-state :loggin-in)
   (let [res (await (api/post "/login" user-form))]
     (if (= (:code res) "ok")
-      (let [{:keys [token user]} (:data res)]
+      (let [{:keys [user]} (:data res)]
         (on-success)
         (swap! app assoc
                :online-state :online
-               :user user
-               :api-token token))
+               :user user))
       (do (swap! app assoc :online-state :offline)
           (messager
             (if (= (:code res) "error")
@@ -96,7 +97,9 @@
                                                 (swap! state conj user)
                                                 (on-done))
                                               set-message))}
-      (i18n/text [:register :button])]]
+      (i18n/text [:register :button])]
+     [:> Button {:class "cancel" :on-click on-done}
+      (i18n/text :cancel)]]
     (finally
       (js/document.removeEventListener "keydown" keydown-event-listener))))
 
