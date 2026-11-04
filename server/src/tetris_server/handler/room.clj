@@ -26,17 +26,23 @@
                    :players-max
                    :game-settings]))
 
-(defn- make-player [uid] {:id uid :state :not-ready})
+(defn- find-empty-slot [room]
+  (let [used-slots (set (map :slot (:players room)))]
+    (first (filter #(not (contains? used-slots %))
+                   (range 0 (:players-max room))))))
+
+(defn- make-player [uid room]
+  {:id uid :state :not-ready :slot (find-empty-slot room)})
 
 (defn make-room
   {:malli/schema [:=> [:cat CreateRoom] Room]}
   [room]
   (assoc room
-         :players [(make-player (:host room))]
+         :players [(make-player (:host room) room)]
          :state :ready))
 
 (defn player-uids [room]
-  (vec (map :id (:players room))))
+  (mapv :id (:players room)))
 
 (defn update-player [room uid update-fn]
   (update room :players
@@ -56,11 +62,14 @@
 (defn join [room uid]
   (if (and (< (count (:players room)) (:players-max room))
            (not (joined? room uid)))
-    (update room :players conj (make-player uid))
+    (update room :players conj (make-player uid room))
     room))
 
 (defn change-host [room host]
   (assoc room :host host))
+
+(defn change-slot [room uid slot]
+  (update-player room uid #(assoc % :slot slot)))
 
 (defn leave [room uid]
   (let [room (update room :players

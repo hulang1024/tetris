@@ -4,9 +4,9 @@
     ["@base-ui/react/button" :refer [Button]]
     ["@base-ui/react/input" :refer [Input]]
     [cljss.core :as css :refer-macros [defstyles]]
+    [tetris.screens.styles.button :as styles.button]
     [reagent.core :as r]
     [tetris.api :as api]
-    [tetris.global :refer [app]]
     [tetris.i18n.core :as i18n]))
 
 (defstyles display-user-class []
@@ -37,33 +37,29 @@
                   :width "100%"
                   :padding "0.2rem"
                   :font-size "1rem"}
-   "button" {:margin-top "1rem"
-             :padding "0.2rem"
-             :font-size "1rem"}})
+   "button" {:margin-top "1rem"}})
 
 (defn- ^:async handle-login [user-form on-success messager]
-  (swap! app assoc :online-state :loggin-in)
-  (let [res (await (api/post "/login" user-form))]
-    (if (= (:code res) "ok")
-      (let [{:keys [user]} (:data res)]
+  (swap! api/state assoc :api-state :loggin-in)
+  (let [resp (await (api/post "/login" user-form))]
+    (if (= (:code resp) :ok)
+      (let [{:keys [user]} (:data resp)]
         (on-success)
-        (swap! app assoc
-               :online-state :online
-               :user user))
-      (do (swap! app assoc :online-state :offline)
+        (swap! api/state assoc :api-state :online :user user))
+      (do (swap! api/state assoc :api-state :offline)
           (messager
-            (if (= (:code res) "error")
-              (i18n/format [:login-message "format-error"] {:u 3 :p 6})
-              (i18n/text [:login-message "failed"])))))))
+            (if (= (:code resp) :error)
+              (i18n/format [:login-message :format-error] {:u 3 :p 6})
+              (i18n/text [:login-message :failed])))))))
 
 (defn- ^:async handle-register [user-form on-success messager]
-  (let [res (await (api/post "/register" user-form))]
-    (if (= (:code res) "ok")
-      (on-success (:data res))
+  (let [resp (await (api/post "/register" user-form))]
+    (if (= (:code resp) :ok)
+      (on-success (:data resp))
       (messager
-        (if (= (:code res) "error")
-          (i18n/format [:register-message "format-error"] {:u 3 :p 6})
-          (i18n/text [:register-message (:code res)]))))))
+        (if (= (:code resp) :error)
+          (i18n/format [:register-message :format-error] {:u 3 :p 6})
+          (i18n/text [:register-message (:code resp)]))))))
 
 (defn logic-overlay [on-done]
   (r/with-let [state (r/atom {:username ""
@@ -84,12 +80,12 @@
                  :on-value-change #(swap! state assoc :password %)}]]
      [:span {:style {:min-height "1rem"
                      :color "orangered"}} (:message @state)]
-     [:> Button {:class "login"
+     [:> Button {:class (styles.button/overlay-button {:bg-color :primary})
                  :on-click (fn []
                              (set-message nil)
                              (handle-login @state on-done set-message))}
       (i18n/text [:login :button]) ]
-     [:> Button {:class "register"
+     [:> Button {:class (styles.button/overlay-button {:bg-color :second})
                  :on-click (fn []
                              (set-message nil)
                              (handle-register @state
@@ -98,14 +94,15 @@
                                                 (on-done))
                                               set-message))}
       (i18n/text [:register :button])]
-     [:> Button {:class "cancel" :on-click on-done}
+     [:> Button {:class (styles.button/overlay-button)
+                 :on-click on-done}
       (i18n/text :cancel)]]
     (finally
       (js/document.removeEventListener "keydown" keydown-event-listener))))
 
 (defn display-user [{:keys [on-click]}]
   [:div {:class (display-user-class)}
-   (case (:online-state @app)
+   (case (:api-state @api/state)
      :offline
      [:span {:style {:width "100%"
                      :justify-self "center"
@@ -115,7 +112,7 @@
       (i18n/text :click-login)]
 
      :online
-     [:div (get-in @app [:user :username])]
+     [:div (get-in @api/state [:user :username])]
 
      nil)])
 

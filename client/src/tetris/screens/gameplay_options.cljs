@@ -2,12 +2,11 @@
   (:require-macros [cljss.core])
   (:require
     ["@base-ui/react/slider" :refer [Slider]]
-    [cljss.core :as css :refer-macros [defstyles]]
     [tetris.options-store :as options-store]
     [tetris.i18n.core :as i18n]
     [tetris.screens.screen :as screen]
     [tetris.screens.styles.slider :as slider.styles]
-    [tetris.screens.tip-buttons-overlay :as tip-buttons-overlay]))
+    [tetris.screens.tip-buttons :refer [tip-buttons-overlay]]))
 
 (defmethod screen/init :gameplay-options []
   {:handling (options-store/get-options :handling)})
@@ -39,4 +38,4 @@
    (option-slider this "DAS" :das 1 20)
    (option-slider this "ARR" :arr 0 6)
    (option-slider this "SDF" :sdf 2 40)
-   (tip-buttons-overlay/render)])
+   (tip-buttons-overlay)])

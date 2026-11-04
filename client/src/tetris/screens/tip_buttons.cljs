@@ -1,4 +1,4 @@
-(ns tetris.screens.tip-buttons-overlay
+(ns tetris.screens.tip-buttons
   (:require-macros [cljss.core])
   (:require
     [cljss.core :refer-macros [defstyles]]
@@ -37,7 +37,7 @@
    [:span {:class (key-class)} key]
    [:span label]])
 
-(defn render [& more-buttons]
+(defn tip-buttons-overlay [& more-buttons]
   [:div {:key "tip-buttons-overlay"
          :class (tip-buttons-overlay-class)}
    [:div {:class (left-class)}

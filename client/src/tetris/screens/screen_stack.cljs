@@ -6,11 +6,9 @@
     [reagent.dom.client :as rd]
     [reagent.ratom :as ratom]
     [tetris.audio :as audio]
-    [tetris.global :refer [app]]
     [tetris.screens.screen :as screen]))
 
-(defn make []
-  {:stack []})
+(def ^:private state (r/atom {:stack []}))
 
 (defn- push-screen [state screen]
   (update state :stack conj screen))
@@ -48,7 +46,7 @@
             [{:key key :class class-name} props children]))))
 
 (defn- render-screen []
-  (when-let [screen-state (active-screen @app)]
+  (when-let [screen-state (active-screen @state)]
     (when-let [view (screen/render screen-state)]
       (add-class-and-key view
                          (screen-class)
@@ -63,32 +61,32 @@
       (r/atom (with-id screen-state)))))
 
 (defn push-screen! [screen-id & init-args]
-  (when-let [screen (active-screen @app)]
+  (when-let [screen (active-screen @state)]
     (screen/on-suspending screen))
   (.then (init-screen screen-id init-args)
          (fn [screen]
-           (swap! app push-screen screen)
+           (swap! state push-screen screen)
            (screen/on-entering screen))))
 
 (defn pop-screen! []
-  (tap> (:stack @app))
-  (when (seq (:stack (pop-screen @app)))
-    (when-let [screen (active-screen @app)]
+  (tap> (:stack @state))
+  (when (seq (:stack (pop-screen @state)))
+    (when-let [screen (active-screen @state)]
       (screen/on-exiting screen))
-    (swap! app pop-screen)
-    (screen/on-resuming (active-screen @app))
+    (swap! state pop-screen)
+    (screen/on-resuming (active-screen @state))
     (audio/play :screen-back)))
 
 (defn replace-screen! [screen-id & init-args]
-  (when-let [screen (active-screen @app)]
+  (when-let [screen (active-screen @state)]
     (screen/on-exiting screen))
   (.then (init-screen screen-id init-args)
          (fn [screen]
-           (swap! app replace-screen screen)
+           (swap! state replace-screen screen)
            (screen/on-entering screen))))
 
 (defn- on-keydown [event]
-  (when-let [screen (active-screen @app)]
+  (when-let [screen (active-screen @state)]
     (let [handled? (screen/on-keydown screen event)]
       (when (and (not handled?) (= (.-code event) "Escape"))
         (pop-screen!)))))

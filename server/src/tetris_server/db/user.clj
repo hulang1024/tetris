@@ -7,8 +7,9 @@
 (defn get-user [ds m]
   (first (sql/find-by-keys ds :users m)))
 
-(defn find-users [ds m]
-  (sql/find-by-keys ds :users m))
+(defn get-user-by-uids [ds uids]
+  (sql/query ds ["select * from users where id = any(?)"
+                 (long-array uids)]))
 
 (defn save-user! [ds user]
   (sql/insert! ds :users user))

@@ -5,7 +5,7 @@
     [tetris.options-store :as options-store]
     [tetris.i18n.core :as i18n]
     [tetris.screens.screen :as screen]
-    [tetris.screens.tip-buttons-overlay :as tip-buttons-overlay]
+    [tetris.screens.tip-buttons :refer [tip-buttons-overlay]]
     [clojure.string :as s]))
 
 (defstyles container-class []
@@ -149,7 +149,7 @@
     "再次点击以配置按键"]
    (when (:button-receiving? @this)
      (button-receive-overlay))
-   (tip-buttons-overlay/render
+   (tip-buttons-overlay
      ["Del" "清除" {:disabled? (or (not (:focused @this))
                                    (not (get-in @this
                                                 (into [:controls] (:focused @this)))))}]

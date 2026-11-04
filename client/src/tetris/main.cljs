@@ -9,8 +9,7 @@
     [tetris.screens.replay]
     [tetris.screens.screen-stack :as screen-stack]
     [tetris.screens.solo]
-    [tetris.screens.lobby]
-    [tetris.screens.create-room]
+    [tetris.screens.multi-ready]
     [tetris.screens.multiplayer]
     [tetris.screens.styles :as styles]))
 

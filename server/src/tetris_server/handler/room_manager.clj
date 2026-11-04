@@ -1,7 +1,5 @@
 (ns tetris-server.handler.room-manager
-  (:require [tetris-server.handler.room :as room :refer [Room RoomId]]))
-
-(def Rooms [:map-of RoomId Room])
+  (:require [tetris-server.handler.room :as room :refer [CreateRoom Room]]))
 
 (defn put-room [rooms room] (assoc rooms (:id room) room))
 
@@ -13,11 +11,14 @@
 (defn get-rooms [rm]
   (vec (vals @(:rooms rm))))
 
+(defn get-match-room [rm _uid]
+  (first (vals @(:rooms rm))))
+
 (defn get-room [rm room-id]
   (get @(:rooms rm) room-id))
 
 (defn add-room!
-  {:malli/schema [:=> [:cat Rooms Room] Rooms]}
+  {:malli/schema [:=> [:cat some? CreateRoom] Room]}
   [rm room]
   (let [room (room/make-room 
                (assoc room

@@ -19,6 +19,7 @@
           :continue-replay "继续回放"
           :exit-replay "退出回放"
           :replay "观看回放"
+          :quick-join-room "快速加入"
           :join-room "加入房间"
           :create-room "创建房间"
           :list-rooms "房间列表"}
@@ -40,12 +41,17 @@
            :button "登录"}
    :register {:button "注册"}
    :cancel "取消"
+   :leave-game "离开游戏"
+   :start-game "开始游戏"
+   :force-start-game "强制开始游戏"
+   :ready-game "准备游戏"
+   :cancel-ready-game "取消准备"
    :create-room {:players-max "最大人数"
                  :is-public "公开房间"
                  :ok "创建房间"}
-   :login-message {"format-error" "用户名至少{u}位，密码至少{p}位"
-                   "failed" "用户名或密码错误"}
-   :register-message {"format-error" "用户名至少{u}位，密码至少{p}位"
-                      "username-exists" "用户名已存在"
-                      "failed" "注册失败"}})
+   :login-message {:format-error "用户名至少{u}位，密码至少{p}位"
+                   :failed "用户名或密码错误"}
+   :register-message {:format-error "用户名至少{u}位，密码至少{p}位"
+                      :username-exists "用户名已存在"
+                      :failed "注册失败"}})
 
