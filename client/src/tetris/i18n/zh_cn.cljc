@@ -41,11 +41,11 @@
            :button "登录"}
    :register {:button "注册"}
    :cancel "取消"
-   :leave-game "离开游戏"
-   :start-game "开始游戏"
-   :force-start-game "强制开始游戏"
-   :ready-game "准备游戏"
-   :cancel-ready-game "取消准备"
+   :multiplayer {:leave "离开游戏"
+                 :start-game "开始游戏"
+                 :force-start-game "强制开始游戏"
+                 :ready "准备游戏"
+                 :unready "取消准备"}
    :create-room {:players-max "最大人数"
                  :is-public "公开房间"
                  :ok "创建房间"}

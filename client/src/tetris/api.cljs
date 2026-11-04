@@ -28,9 +28,9 @@
            :conn-state :offline
            :user nil
            :conn nil
-           :event-handlers {:user-joined {}
-                            :user-left {}
-                            :ready-toggled {}}}))
+           :event-handlers {:player-joined {}
+                            :player-left {}
+                            :player-ready-toggled {}}}))
 
 (defn ^:async load-user! []
   (let [resp (await (get! "/whoami" nil))]
@@ -55,7 +55,6 @@
                                                 :keywordize-keys true)
                                        event.data)
                                event-type (keyword (:type event))]
-                           (println (type event-type))
                            (doseq [[_k handler]
                                    (get-in @state [:event-handlers event-type])]
                              (handler event)))))))

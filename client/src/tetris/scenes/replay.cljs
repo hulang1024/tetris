@@ -1,13 +1,14 @@
 (ns tetris.scenes.replay
   (:require [tetris.assets :as assets]
+            [tetris.audio :as audio]
             [tetris.core.game :as game]
-            [tetris.core.ruleset.rotation-nrs]
-            [tetris.core.ruleset.rotation-srs]
-            [tetris.core.ruleset.rotation-prs]
-            [tetris.core.tick :as tick]
             [tetris.core.replay :as replay]
-            [tetris.scenes.debug :as debug]
+            [tetris.core.ruleset.rotation-nrs]
+            [tetris.core.ruleset.rotation-prs]
+            [tetris.core.ruleset.rotation-srs]
+            [tetris.core.tick :as tick]
             [tetris.input.keyboard :as keyboard]
+            [tetris.scenes.debug :as debug]
             [tetris.scenes.render.gameplay.game-view :as game-view]
             [tetris.scenes.render.gameplay.sound-effect :as sound-effect]))
 
@@ -78,7 +79,8 @@
 (defn ^:async start [^js app game-state replay-events]
   (tap> (str "replay events\n" replay-events))
   (let [options (merge game-state {:piece-style "b11"})]
-    (await (assets/load-piece-styles (:piece-style options)))
+    (await (js/Promise.all [(assets/load-piece-styles (:piece-style options))
+                            (audio/load-sounds :gameplay)]))
     (let [view (game-view/create options)]
       (.addChild (.-stage app) (:container view))
       (reset! scene-state

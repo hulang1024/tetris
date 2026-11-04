@@ -51,7 +51,7 @@
                  :max 4
                  :autoFocus true
                  :defaultValue (:players-max @state)
-                 :on-value-change #(swap! state assoc :players-max %)}]]
+                 :on-value-change #(swap! state assoc :players-max (js/parseInt %))}]]
      [:div {:class (settings-row)}
       [:span {:class "label"} (i18n/text [:create-room :is-public])]
       [:> Input {:type "checkbox"

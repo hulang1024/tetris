@@ -8,7 +8,8 @@
     [tetris.i18n.core :as i18n]
     [tetris.screens.screen :as screen]
     [tetris.screens.screen-stack :as screen-stack]
-    [tetris.screens.styles.button :as styles.button]))
+    [tetris.screens.styles.button :as styles.button]
+    [tetris.audio :as audio]))
 
 (defstyles player-slot-class [empty-slot? readied?]
   {:position "relative"
@@ -26,6 +27,17 @@
 (defstyles slots-container-class []
   {:display "flex"})
 
+(defn- get-player-info [player user-infos]
+  (merge player (first (filter #(= (:id %) (:id player)) user-infos))))
+
+(defn- ^:async handle-start [button-command]
+  (case button-command
+    :ready (api/post "/room/toggle-ready")
+    :unready (api/post "/room/toggle-ready")
+    :start-game (let [resp (await (api/post "/room/enter-game"))]
+                  (when (= (:code resp) :ok)
+                    (screen-stack/replace-screen! :multiplayer)))))
+
 (defn- player-slot [player host]
   (let [empty-slot? (nil? player)
         host? (= (:id player) host)
@@ -42,24 +54,32 @@
        [:div {:style {:margin-top "2rem"}}
         (if readied? "已准备" "未准备")])]))
 
-(defn- ^:async leave-room []
-  (screen-stack/pop-screen!))
-
-(defn- get-player-info [player user-infos]
-  (merge player (first (filter #(= (:id %) (:id player)) user-infos))))
-
-(defn- get-me [players]
-  (first (filter #(= (:id %) (get-in @api/state [:user :id])) players)))
-
-(defn- ^:async handle-start [button-command]
-  (case button-command
-    :ready-game (api/post "/room/toggle-ready")
-    :cancel-ready-game (api/post "/room/toggle-ready")
-    :start-game (let [resp (await (api/post "/room/enter-game"))]
-                  (when (= (:code resp) :ok)
-                    (screen-stack/replace-screen! :multiplayer)))))
+(defn- start-button [user players room]
+  (let [me (first (filter #(= (:id %) (:id user)) players))
+        host? (= (:id me) (:host room))
+        readied? (= (:state me) "readied")
+        joined-count (count (filter some? players))
+        readied-count (count (filter #(= (:state %) "readied") players))
+        players-min (:players-min room)
+        button-command (if readied?
+                         (if host?
+                           (cond
+                             (< readied-count players-min) :unready
+                             (>= readied-count joined-count) :start-game
+                             (< readied-count joined-count) :force-start-game)
+                           :unready)
+                         :ready)]
+    [:> Button {:class (styles.button/overlay-button
+                         {:bg-color (if (= button-command :start-game)
+                                      :success
+                                      :primary)
+                          :full? false})
+                :style {:margin-left "1rem"}
+                :on-click #(handle-start button-command)}
+     (i18n/text [:multiplayer button-command])]))
 
 (defmethod screen/init :multi-ready [_ {:keys [room users]}]
+  (audio/load-sounds :multiplayer)
   (let [state (r/atom {:room (dissoc room :players)
                        :players
                        (mapv (fn [slot]
@@ -67,27 +87,35 @@
                                  (get-player-info player users)))
                              (range (:players-max room)))})]
     (api/subscribe-event
-      :user-joined
-      (fn [{{:keys [room user]} :data}]
-        (let [player (first (filter #(= (:id %) (:id user)) (:players room)))]
-          (swap! state assoc-in [:players (:slot player)]
-                 (get-player-info player [user])))))
+      :player-joined
+      (fn [{{:keys [player user]} :data}]
+        (swap! state assoc-in [:players (:slot player)] (get-player-info player [user]))
+        (audio/play :multiplayer/player-joined)))
     (api/subscribe-event
-      :user-left
-      (fn [{{:keys [room uid]} :data}]
-        (let [player (first (filter #(= (:id %) uid) (:players room)))]
-          (swap! state (fn [state]
-                         (-> (assoc-in state [:players (:slot player)] nil)
-                             (assoc-in [:room :host] (:host room))))))))
+      :player-left
+      (fn [{{:keys [room player]} :data}]
+        (swap! state (fn [state]
+                       (-> (assoc-in state [:players (:slot player)] nil)
+                           (assoc-in [:room :host] (:host room)))))
+        (audio/play :multiplayer/player-left)))
     (api/subscribe-event
-      :ready-toggled
-      (fn [{{:keys [room uid]} :data}]
-        (let [player (first (filter #(= (:id %) uid) (:players room)))]
-          (swap! state assoc-in [:players (:slot player) :state] (:state player)))))
+      :player-ready-toggled
+      (fn [{{:keys [room player]} :data}]
+        (let [ready? (= (:state player) "readied")
+              me? (= (:id player) (get-in @api/state [:user :id]))
+              joined-count (count (filter some? (:players room)))
+              readied-count (count (filter #(= (:state %) "readied") (:players room)))]
+          (swap! state assoc-in [:players (:slot player) :state] (:state player))
+          (if (= joined-count readied-count)
+            (audio/play :multiplayer/player-ready-all)
+            (when me?
+              (audio/play (if ready?
+                            :multiplayer/player-ready
+                            :multiplayer/player-unready)))))))
     state))
 
 (defmethod screen/on-exiting :multi-ready []
-  (doseq [event-type [:user-joined :user-left :ready-toggled]]
+  (doseq [event-type [:player-joined :player-left :player-ready-toggled]]
     (api/unsubscribe-event event-type))
   (api/post "/room/leave-room"))
 
@@ -98,27 +126,6 @@
 
    [:div {:style {:margin-top "2rem"}}
     [:> Button {:class (styles.button/overlay-button {:bg-color :danger :full? false})
-                :on-click #(leave-room)}
-     (i18n/text :leave-game)]
-    (let [me (get-me (:players @this))
-          readied? (= (:state me) "readied")
-          joined-count (count (filter some? (:players @this)))
-          readied-count (count (filter #(= (:state %) "readied") (:players @this)))
-          players-min (get-in @this [:room :players-min])
-          host? (= (:id me) (get-in @this [:room :host]))
-          button-command (if readied?
-                           (if host?
-                             (cond
-                               (< readied-count players-min) :cancel-ready-game
-                               (>= readied-count joined-count) :start-game
-                               (< readied-count joined-count) :force-start-game)
-                             :cancel-ready-game)
-                           :ready-game)]
-      [:> Button {:class (styles.button/overlay-button
-                           {:bg-color (if (= button-command :start-game)
-                                        :success
-                                        :primary)
-                            :full? false})
-                  :style {:margin-left "1rem"}
-                  :on-click #(handle-start button-command)}
-       (i18n/text button-command)])]])
+                :on-click #(screen-stack/pop-screen!)}
+     (i18n/text [:multiplayer :leave])]
+    (start-button (:user @api/state) (:players @this) (:room @this))]])

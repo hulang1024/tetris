@@ -44,6 +44,9 @@
 (defn player-uids [room]
   (mapv :id (:players room)))
 
+(defn find-player [room uid]
+  (first (filter #(= (:id %) uid) (:players room))))
+
 (defn update-player [room uid update-fn]
   (update room :players
           (fn [players]

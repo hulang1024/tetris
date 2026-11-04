@@ -9,7 +9,8 @@
             [tetris.scenes.debug :as debug]
             [tetris.input.keyboard :as keyboard]
             [tetris.scenes.render.gameplay.game-view :as game-view]
-            [tetris.scenes.render.gameplay.sound-effect :as sound-effect]))
+            [tetris.scenes.render.gameplay.sound-effect :as sound-effect]
+            [tetris.audio :as audio]))
 
 (defn- initial-scene [game-state]
   {:game-state game-state
@@ -58,7 +59,8 @@
 
 (defn ^:async start [^js app game-state]
   (let [options (merge game-state {:piece-style "b11"})]
-    (await (assets/load-piece-styles (:piece-style options)))
+    (await (js/Promise.all [(assets/load-piece-styles (:piece-style options))
+                            (audio/load-sounds :gameplay)]))
     (let [view (game-view/create options)]
       (.addChild (.-stage app) (:container view))
       (reset! scene-state

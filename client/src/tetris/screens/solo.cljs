@@ -2,7 +2,6 @@
   (:require-macros [cljss.core])
   (:require [cljss.core :as css :refer-macros [defstyles]]
             [goog.style :as gstyle]
-            [tetris.assets :as assets]
             [tetris.audio :as audio]
             [tetris.core.ruleset.classic :refer [make-classic-ruleset]]
             [tetris.core.ruleset.modern :refer [make-modern-ruleset]]
@@ -27,7 +26,6 @@
 (defn- ^:async load-scene [{:keys [mode seed options]}]
   (destroy-scene)
   (keyboard/init)
-  (await (assets/load))
   (reset! pixi-app (await (app/init)))
   (.appendChild js/document.body (.-canvas @pixi-app))
   (let [game-state (tick/initial-game

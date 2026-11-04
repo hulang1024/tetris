@@ -51,8 +51,9 @@
                   joined? (room/joined? room uid)]
               (when joined?
                 (ws/broadcast-event! (room/player-uids room)
-                                     :user-joined
+                                     :player-joined
                                      {:room room
+                                      :player (room/find-player room uid)
                                       :user (user/get-user-info datasource {:id uid})}))
               (api-response (if joined? :ok :failed)
                             {:room room
@@ -63,9 +64,10 @@
   (let [room (room-manager/get-joined-room room-manager uid)]
     (cond
       (nil? room) (api-response :not-found)
-      :else (let [uids (room/player-uids room)]
-              (room-manager/leave-room! room-manager (:id room) uid)
-              (ws/broadcast-event! uids :user-left {:room room :uid uid})
+      :else (let [uids (room/player-uids room)
+                  player (room/find-player room uid)
+                  room (room-manager/leave-room! room-manager (:id room) uid)]
+              (ws/broadcast-event! uids :player-left {:room room :player player})
               (api-response :ok)))))
 
 (defn toggle-ready [{:keys [room-manager]
@@ -75,7 +77,8 @@
       (nil? room) (api-response :not-found)
       :else (let [room (room-manager/toggle-ready! room-manager (:id room) uid)
                   uids (room/player-uids room)]
-              (ws/broadcast-event! uids :ready-toggled {:room room :uid uid})
+              (ws/broadcast-event! uids :player-ready-toggled
+                                   {:room room :player (room/find-player room uid)})
               (api-response :ok)))))
 
 (defn enter-game [{:keys [room-manager]

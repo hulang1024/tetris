@@ -2,8 +2,7 @@
   (:require [cheshire.core :as json]
             [io.pedestal.service.websocket :as ws]
             [tetris-server.handler.room :as room]
-            [tetris-server.handler.room-manager :as room-manager]
-            [tetris-server.handler.user-manager :as user]))
+            [tetris-server.handler.room-manager :as room-manager]))
 
 (defonce ^:private ws-channels (atom {}))
 
@@ -49,4 +48,6 @@
                  (del! uid)
                  (when-let [room (room-manager/get-joined-room room-manager uid)]
                    (room-manager/leave-room! room-manager (:id room) uid)
-                   (broadcast-event! (room/player-uids room) :user-left {:room room :uid uid})))}))
+                   (broadcast-event! (room/player-uids room) :player-left
+                                     {:room room
+                                      :player (room/find-player room uid)})))}))

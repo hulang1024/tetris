@@ -17,7 +17,7 @@
   (when ^boolean goog/DEBUG
     (add-tap println))
   (styles/load-global)
-  (await (audio/load-sounds (audio/ui-list)))
+  (await (audio/load-sounds :ui))
   (screen-stack/render)
   (screen-stack/push-screen! :main-menu)
 
