@@ -1,4 +1,4 @@
-(ns tetris.dev-preload
+(ns dev.preload
   {:dev/always true}
   (:require [tetris.main]
             [malli.dev.cljs :as dev]))

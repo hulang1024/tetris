@@ -47,7 +47,7 @@
 
 (defn- render-screen []
   (when-let [screen-state (active-screen @state)]
-    (when-let [view (screen/render screen-state)]
+    (when-let [view (screen/build screen-state)]
       (add-class-and-key view
                          (screen-class)
                          (name (:id @screen-state))))))

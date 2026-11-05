@@ -1,4 +1,4 @@
-(ns tetris.screens.menu)
+(ns tetris.screens.menu.core)
 
 (defn item
   ([id parent order] (item id parent order nil))

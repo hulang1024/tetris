@@ -1,4 +1,4 @@
-(ns tetris.screens.room-create 
+(ns tetris.screens.multiplayer.room-create 
   (:require-macros [cljss.core])
   (:require
     ["@base-ui/react/button" :refer [Button]]
@@ -6,8 +6,8 @@
     [cljss.core :as css :refer-macros [defstyles]]
     [tetris.screens.styles.button :as styles.button]
     [reagent.core :as r]
-    [tetris.api :as api]
-    [tetris.i18n.core :as i18n]))
+    [tetris.i18n.core :as i18n]
+    [tetris.screens.multiplayer.room-manager :as room-manager]))
 
 (defstyles game-settings-class []
   {:position "fixed"
@@ -33,7 +33,7 @@
    "input[type=checkbox]" {:width "1.4rem" :height "1.4rem"}})
 
 (defn- ^:async handle-create-room [room on-done messager]
-  (let [resp (await (api/post "/room/create-room" room))]
+  (let [resp (await (room-manager/create-room room))]
     (if (= (:code resp) :ok)
       (on-done (:data resp))
       (do (messager "创建失败")

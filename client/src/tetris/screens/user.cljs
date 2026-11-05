@@ -6,7 +6,7 @@
     [cljss.core :as css :refer-macros [defstyles]]
     [tetris.screens.styles.button :as styles.button]
     [reagent.core :as r]
-    [tetris.api :as api]
+    [tetris.online.api :as api]
     [tetris.i18n.core :as i18n]))
 
 (defstyles display-user-class []
@@ -40,20 +40,16 @@
    "button" {:margin-top "1rem"}})
 
 (defn- ^:async handle-login [user-form on-success messager]
-  (swap! api/state assoc :api-state :loggin-in)
-  (let [resp (await (api/post "/login" user-form))]
+  (let [resp (await (api/login! user-form))]
     (if (= (:code resp) :ok)
-      (let [{:keys [user]} (:data resp)]
-        (on-success)
-        (swap! api/state assoc :api-state :online :user user))
-      (do (swap! api/state assoc :api-state :offline)
-          (messager
-            (if (= (:code resp) :error)
-              (i18n/format [:login-message :format-error] {:u 3 :p 6})
-              (i18n/text [:login-message :failed])))))))
+      (on-success)
+      (messager
+        (if (= (:code resp) :error)
+          (i18n/format [:login-message :format-error] {:u 3 :p 6})
+          (i18n/text [:login-message :failed]))))))
 
 (defn- ^:async handle-register [user-form on-success messager]
-  (let [resp (await (api/post "/register" user-form))]
+  (let [resp (await (api/register! user-form))]
     (if (= (:code resp) :ok)
       (on-success (:data resp))
       (messager
@@ -102,7 +98,7 @@
 
 (defn display-user [{:keys [on-click]}]
   [:div {:class (display-user-class)}
-   (case (:api-state @api/state)
+   (case (api/get-state)
      :offline
      [:span {:style {:width "100%"
                      :justify-self "center"
@@ -112,7 +108,7 @@
       (i18n/text :click-login)]
 
      :online
-     [:div (get-in @api/state [:user :username])]
+     [:div (:username (api/local-user))]
 
      nil)])
 

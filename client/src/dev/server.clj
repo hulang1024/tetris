@@ -1,4 +1,4 @@
-(ns tetris.dev-server
+(ns dev.server
   (:require [clojure.string :as str]) 
   (:import
     [io.undertow.server HttpServerExchange]))

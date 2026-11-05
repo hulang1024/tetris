@@ -1,17 +1,17 @@
 (ns tetris.main
   (:require
     [cljss.core :as css]
-    [tetris.api :as api]
+    [tetris.online.api :as api]
     [tetris.audio :as audio]
-    [tetris.screens.controls-options]
-    [tetris.screens.gameplay-options]
-    [tetris.screens.main-menu]
-    [tetris.screens.replay]
     [tetris.screens.screen-stack :as screen-stack]
-    [tetris.screens.solo]
-    [tetris.screens.multi-ready]
-    [tetris.screens.multiplayer]
-    [tetris.screens.styles :as styles]))
+    [tetris.screens.controls-options-screen]
+    [tetris.screens.gameplay-options-screen]
+    [tetris.screens.main-menu-screen]
+    [tetris.screens.replay-screen]
+    [tetris.screens.solo-play-screen]
+    [tetris.screens.multiplayer.multiplayer-ready-screen]
+    [tetris.screens.multiplayer.multiplayer-play-screen]
+    [tetris.screens.styles.global :as styles]))
 
 (defn ^:async init []
   (when ^boolean goog/DEBUG
@@ -21,7 +21,7 @@
   (screen-stack/render)
   (screen-stack/push-screen! :main-menu)
 
-  (api/load-user!))
+  (api/load-session-user!))
 
 (defn ^:async ^:dev/after-load reload []
   (tap> "reload")

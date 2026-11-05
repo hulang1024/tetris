@@ -1,4 +1,4 @@
-(ns tetris.screens.replay
+(ns tetris.screens.replay-screen
   (:require-macros [cljss.core])
   (:require [cljss.core :as css :refer-macros [defstyles]]
             [tetris.core.ruleset.classic :refer [make-classic-ruleset]]
@@ -7,8 +7,8 @@
             [tetris.input.keyboard :as keyboard]
             [tetris.scenes.replay :as replay]
             [tetris.scenes.render.pixi-app :as app]
-            [tetris.screens.menu-overlay :refer [menu-overlay]]
-            [tetris.screens.menu :as menu]
+            [tetris.screens.menu.core :as menu]
+            [tetris.screens.menu.menu-overlay :refer [menu-overlay]]
             [tetris.screens.screen :as screen]
             [tetris.screens.screen-stack :as screen-stack]))
 
@@ -71,7 +71,7 @@
                  :font-size 24}}
    "加载中..."])
 
-(defmethod screen/render :replay [this]
+(defmethod screen/build :replay [this]
   [:div
    [:div {:style {:position "absolute"
                   :top "1rem"}}

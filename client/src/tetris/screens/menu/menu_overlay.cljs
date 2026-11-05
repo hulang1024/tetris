@@ -1,11 +1,11 @@
-(ns tetris.screens.menu-overlay
+(ns tetris.screens.menu.menu-overlay
   (:require-macros [cljss.core])
   (:require
     [cljss.core :as css :refer-macros [defstyles]]
     [tetris.i18n.core :as i18n]
     [reagent.core :as r]
     [tetris.audio :as audio]
-    [tetris.screens.menu :as menu]))
+    [tetris.screens.menu.core :as menu]))
 
 (defstyles base-item-class [item-id]
   {:padding "0.5em 0"
@@ -61,7 +61,7 @@
                             menu-item-class
                             menu-item-hover-class
                             on-enter]}]
-  (r/with-let [state (or state (r/atom (menu/make menu-items default-hover)))
+  (r/with-let [state (r/atom (or state (menu/make menu-items default-hover)))
                update-state #(reset! state %)
                keydown-event-listener (fn [event]
                                         (when-not (.-repeat event) 

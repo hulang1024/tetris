@@ -77,7 +77,7 @@
       (nil? room) (api-response :not-found)
       :else (let [room (room-manager/toggle-ready! room-manager (:id room) uid)
                   uids (room/player-uids room)]
-              (ws/broadcast-event! uids :player-ready-toggled
+              (ws/broadcast-event! uids :player-ready
                                    {:room room :player (room/find-player room uid)})
               (api-response :ok)))))
 

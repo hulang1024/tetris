@@ -1,4 +1,4 @@
-(ns tetris.screens.solo
+(ns tetris.screens.solo-play-screen
   (:require-macros [cljss.core])
   (:require [cljss.core :as css :refer-macros [defstyles]]
             [goog.style :as gstyle]
@@ -9,8 +9,8 @@
             [tetris.input.keyboard :as keyboard]
             [tetris.scenes.gameplay :as gameplay]
             [tetris.scenes.render.pixi-app :as app]
-            [tetris.screens.menu :as menu]
-            [tetris.screens.menu-overlay :refer [menu-overlay]]
+            [tetris.screens.menu.core :as menu]
+            [tetris.screens.menu.menu-overlay :refer [menu-overlay]]
             [tetris.screens.screen :as screen]
             [tetris.screens.screen-stack :as screen-stack]
             [tetris.options-store :as options-store]))
@@ -91,7 +91,7 @@
                  :font-size 24}}
    "加载中..."])
 
-(defmethod screen/render :solo [this]
+(defmethod screen/build :solo [this]
   [:div
    (cond
      (:loading? @this) [loading-overlay]

@@ -1,4 +1,4 @@
-(ns tetris.screens.controls-options
+(ns tetris.screens.controls-options-screen
   (:require-macros [cljss.core])
   (:require
     [cljss.core :as css :refer-macros [defstyles]]
@@ -41,7 +41,7 @@
 (defstyles bracket-class [focused?]
   {:color (if focused? "#111" "rgba(111,111,111,0.45)")})
 
-(defn button-display [{:keys [button]}]
+(defn button-text [{:keys [button]}]
   (cond
     (s/starts-with? button "Key") (.substr button 3)
     (s/starts-with? button "Arrow") ({"ArrowLeft" "←"
@@ -57,7 +57,7 @@
          :class (button-slot-class focused?)
          :on-click (if focused? on-select on-focus)}
    [:span {:class (bracket-class focused?)} "〖"]
-   [:span {:class (button-text-class)} (and button (button-display button))] 
+   [:span {:class (button-text-class)} (and button (button-text button))] 
    [:span {:class (bracket-class focused?)} "〗"]])
 
 (defn- button-receive-overlay []
@@ -126,7 +126,7 @@
      :focused nil
      :button-receiving? false}))
 
-(defmethod screen/render :controls-options [this]
+(defmethod screen/build :controls-options [this]
   [:div
    [:h1 (i18n/text [:screen-title :custom-controls])]
    [:div {:class (container-class)}

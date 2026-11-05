@@ -1,4 +1,4 @@
-(ns tetris.screens.styles
+(ns tetris.screens.styles.global
   (:require-macros [cljss.core])
   (:require [cljss.core :as css]))
 
