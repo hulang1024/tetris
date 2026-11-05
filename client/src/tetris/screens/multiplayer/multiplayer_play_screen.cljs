@@ -1,6 +1,4 @@
-(ns tetris.screens.multiplayer.multiplayer-play-screen
-  (:require
-    [tetris.screens.screen :as screen]))
+(ns tetris.screens.multiplayer.multiplayer-play-screen)
 
-(defmethod screen/build :multiplayer [_this]
-  [:div "ok"])
+(defn make []
+  (fn [] "ok"))

@@ -1,16 +1,11 @@
 (ns tetris.main
   (:require
     [cljss.core :as css]
-    [tetris.online.api :as api]
     [tetris.audio :as audio]
+    [tetris.online.api :as api]
+    [tetris.screens.main-menu-screen :as main-menu-screen]
+    [tetris.screens.screen-container :as screen-container]
     [tetris.screens.screen-stack :as screen-stack]
-    [tetris.screens.controls-options-screen]
-    [tetris.screens.gameplay-options-screen]
-    [tetris.screens.main-menu-screen]
-    [tetris.screens.replay-screen]
-    [tetris.screens.solo-play-screen]
-    [tetris.screens.multiplayer.multiplayer-ready-screen]
-    [tetris.screens.multiplayer.multiplayer-play-screen]
     [tetris.screens.styles.global :as styles]))
 
 (defn ^:async init []
@@ -18,8 +13,8 @@
     (add-tap println))
   (styles/load-global)
   (await (audio/load-sounds :ui))
-  (screen-stack/render)
-  (screen-stack/push-screen! :main-menu)
+  (screen-container/load)
+  (screen-stack/push-screen! (main-menu-screen/make))
 
   (api/load-session-user!))
 
@@ -27,4 +22,4 @@
   (tap> "reload")
   (css/remove-styles!)
   (styles/load-global)
-  (screen-stack/render))
+  (screen-container/load))

@@ -2,18 +2,20 @@
   (:require-macros [cljss.core])
   (:require [cljss.core :as css :refer-macros [defstyles]]
             [goog.style :as gstyle]
+            [reagent.core :as r]
             [tetris.audio :as audio]
             [tetris.core.ruleset.classic :refer [make-classic-ruleset]]
             [tetris.core.ruleset.modern :refer [make-modern-ruleset]]
             [tetris.core.tick :as tick]
             [tetris.input.keyboard :as keyboard]
+            [tetris.options-store :as options-store]
             [tetris.scenes.gameplay :as gameplay]
             [tetris.scenes.render.pixi-app :as app]
             [tetris.screens.menu.core :as menu]
             [tetris.screens.menu.menu-overlay :refer [menu-overlay]]
-            [tetris.screens.screen :as screen]
+            [tetris.screens.replay-screen :as replay-screen]
             [tetris.screens.screen-stack :as screen-stack]
-            [tetris.options-store :as options-store]))
+            [tetris.screens.controls-options-screen :as controls-options-screen]))
 
 (def pixi-app (atom nil))
 
@@ -35,46 +37,6 @@
                             options))]
     (await (gameplay/start @pixi-app game-state))))
 
-(defmethod screen/init :solo [_ {:keys [mode]}]
-  {:loading? true
-   :settings {:mode mode
-              :seed (+ (js/Date.now))
-              :options (if (not= mode :classic)
-                         (options-store/get-options :handling)
-                         {})} 
-   :scene-state nil
-   :game-status :playing})
-
-(defmethod screen/on-entering :solo [this] 
-  (when (contains? #{:marathon :classic} (get-in @this [:settings :mode]))
-    (let [scene-state-promise (load-scene (:settings @this))]
-      (.then scene-state-promise
-             (fn [scene-state]
-               (swap! this assoc
-                      :loading? false
-                      :scene-state scene-state)
-               (add-watch
-                 scene-state
-                 :sync
-                 (fn [_key _ref old new]
-                   (let [listen-keys [:status]
-                         old (select-keys old listen-keys)
-                         new (select-keys new listen-keys)]
-                     (when (not= old new)
-                       (swap! this
-                              (fn [screen]
-                                (assoc screen
-                                       :game-status (:status new)))))))))))))
-
-(defmethod screen/on-suspending :solo [_]
-  (gstyle/setStyle (.-canvas @pixi-app) #js {:display "none"})) 
-
-(defmethod screen/on-resuming :solo [_]
-  (gstyle/setStyle (.-canvas @pixi-app) #js {:display "block"})) 
-
-(defmethod screen/on-exiting :solo []
-  (destroy-scene))
-
 (defstyles gameplay-menu-class []
   {:background "rgba(0, 0, 0, 0.6)"
    :backdrop-filter "blur(0.1em)"
@@ -91,7 +53,9 @@
                  :font-size 24}}
    "加载中..."])
 
-(defmethod screen/build :solo [this]
+(declare make)
+
+(defn- build [{this :state}]
   [:div
    (cond
      (:loading? @this) [loading-overlay]
@@ -116,14 +80,13 @@
            :continue-game (do (swap! this assoc :game-status :playing)
                               (swap! (:scene-state @this) assoc :status :playing))
            :start-over (screen-stack/replace-screen!
-                         :solo
-                         (select-keys (:settings @this) [:mode]))
-           :custom-controls (screen-stack/push-screen! :controls-options)
+                         (make (select-keys (:settings @this) [:mode])))
+           :custom-controls (screen-stack/push-screen! (controls-options-screen/make))
            :exit-game (screen-stack/pop-screen!)
            :replay (screen-stack/push-screen!
-                     :replay
-                     (assoc (:settings @this)
-                            :replay-events (:replay-recorder @(:scene-state @this))))
+                     (replay-screen/make
+                       (assoc (:settings @this)
+                              :replay-events (:replay-recorder @(:scene-state @this)))))
            nil))
        :menu-class gameplay-menu-class
        :menu-item-class menu-item-class
@@ -131,7 +94,36 @@
 
      :else nil)])
 
-(defmethod screen/on-keydown :solo [this event]
+(defn- on-entering [{this :state}] 
+  (when (contains? #{:marathon :classic} (get-in @this [:settings :mode]))
+    (let [scene-state-promise (load-scene (:settings @this))]
+      (.then scene-state-promise
+             (fn [scene-state]
+               (swap! this assoc
+                      :loading? false
+                      :scene-state scene-state)
+               (add-watch
+                 scene-state
+                 :sync
+                 (fn [_key _ref old new]
+                   (let [listen-keys [:status]
+                         old (select-keys old listen-keys)
+                         new (select-keys new listen-keys)]
+                     (when (not= old new)
+                       (swap! this
+                              (fn [screen]
+                                (assoc screen
+                                       :game-status (:status new)))))))))))))
+
+(defn- on-suspending []
+  (gstyle/setStyle (.-canvas @pixi-app) #js {:display "none"})) 
+
+(defn- on-resuming []
+  (gstyle/setStyle (.-canvas @pixi-app) #js {:display "block"})) 
+
+(defn- on-exiting []
+  (destroy-scene))
+(defn- on-keydown [{this :state} event]
   (when (= (.-code event) "Escape")
     (if (= (:status @(:scene-state @this)) :game-over)
       (screen-stack/pop-screen!)
@@ -143,3 +135,21 @@
         (swap! this assoc :game-status new-game-status)
         (swap! (:scene-state @this) assoc :status new-game-status))))
   true)
+
+(defn make [mode]
+  {:name :solo-play
+   :build build
+   :on-entering on-entering
+   :on-suspending on-suspending
+   :on-resuming on-resuming
+   :on-exiting on-exiting
+   :on-keydown on-keydown
+   :state (r/atom {:loading? true
+                   :settings {:mode mode
+                              :seed (+ (js/Date.now))
+                              :options (if (not= mode :classic)
+                                         (options-store/get-options :handling)
+                                         {})} 
+                   :scene-state nil
+                   :game-status :playing})})
+

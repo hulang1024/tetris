@@ -61,7 +61,7 @@
                             menu-item-class
                             menu-item-hover-class
                             on-enter]}]
-  (r/with-let [state (r/atom (or state (menu/make menu-items default-hover)))
+  (r/with-let [state (or state (r/atom (menu/make menu-items default-hover)))
                update-state #(reset! state %)
                keydown-event-listener (fn [event]
                                         (when-not (.-repeat event) 

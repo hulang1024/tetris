@@ -2,11 +2,11 @@
   (:require-macros [cljss.core])
   (:require
     [cljss.core :as css :refer-macros [defstyles]]
-    [tetris.options-store :as options-store]
+    [clojure.string :as str]
+    [reagent.core :as r]
     [tetris.i18n.core :as i18n]
-    [tetris.screens.screen :as screen]
-    [tetris.screens.tip-buttons :refer [tip-buttons-overlay]]
-    [clojure.string :as s]))
+    [tetris.options-store :as options-store]
+    [tetris.screens.tip-buttons :refer [tip-buttons-overlay]]))
 
 (defstyles container-class []
   {:max-width "60rem"
@@ -43,13 +43,13 @@
 
 (defn button-text [{:keys [button]}]
   (cond
-    (s/starts-with? button "Key") (.substr button 3)
-    (s/starts-with? button "Arrow") ({"ArrowLeft" "←"
+    (str/starts-with? button "Key") (.substr button 3)
+    (str/starts-with? button "Arrow") ({"ArrowLeft" "←"
                                       "ArrowRight" "→"
                                       "ArrowUp" "↑"
                                       "ArrowDown" "↓"} button)
-    (s/starts-with? button "Control") (str (.substr button 7 1) " Ctrl")
-    (s/starts-with? button "Shift") (str (.substr button 5 1) " Shift")
+    (str/starts-with? button "Control") (str (.substr button 7 1) " Ctrl")
+    (str/starts-with? button "Shift") (str (.substr button 5 1) " Shift")
     :else button))
 
 (defn- button-slot [key button focused? on-focus on-select]
@@ -94,20 +94,20 @@
          :controls (assoc-in (:controls state) [action slot-index] button)
          :button-receiving? false))
 
-(defn- save-controls! [this controls]
+(defn- save-controls! [state controls]
   (options-store/save-options! :controls controls)
-  (swap! this assoc :controls-unchanged controls))
+  (swap! state assoc :controls-unchanged controls))
 
-(defn- reset-controls! [this]
+(defn- reset-controls! [state]
   (let [controls (options-store/slotify-controls
                    (:controls options-store/default-options))]
-    (swap! this assoc :controls controls)
-    (save-controls! this controls)))
+    (swap! state assoc :controls controls)
+    (save-controls! state controls)))
 
-(defn- move-focus! [this dir]
-  (if-not (:focused @this)
-    (swap! this assoc :focused [(ordered-actions 0) 0])
-    (let [[action slot-index] (:focused @this)
+(defn- move-focus! [state dir]
+  (if-not (:focused @state)
+    (swap! state assoc :focused [(ordered-actions 0) 0])
+    (let [[action slot-index] (:focused @state)
           action-index (first (keep-indexed #(when (= %2 action) %1)
                                             ordered-actions))
           [action-index slot-index]
@@ -116,74 +116,78 @@
             :right [action-index (min 2 (inc slot-index))]
             :up [(max (dec action-index) 0) slot-index]
             :down [(min (inc action-index) (dec (count ordered-actions))) slot-index])]
-      (swap! this assoc :focused [(ordered-actions action-index) slot-index]))))
+      (swap! state assoc :focused [(ordered-actions action-index) slot-index]))))
 
-(defmethod screen/init :controls-options []
-  (let [controls (options-store/slotify-controls
-                   (options-store/get-options :controls))]
-    {:controls-unchanged controls
-     :controls controls
-     :focused nil
-     :button-receiving? false}))
+(defn- build [{:keys [state]}]
+   [:div
+    [:h1 (i18n/text [:screen-title :custom-controls])]
+    [:div {:class (container-class)}
+     (for [action ordered-actions]
+       [:div {:key action :class (control-item-class)}
+        [:div {:class (action-title-class)}
+         (i18n/text [:controls-action action])]
+        [:div {:class (button-slots-class)}
+         (for [[slot-index button] (map-indexed
+                                     vector
+                                     (get-in @state [:controls action]))]
+           (button-slot [action slot-index]
+                        button
+                        (= (:focused @state) [action slot-index])
+                        #(swap! state assoc :focused [action slot-index])
+                        #(swap! state assoc :button-receiving? true)))]])]
+    [:div {:style {:margin-top "32px"
+                   :visibility (if (and (not (:button-receiving? @state))
+                                        (:focused @state)) "visible" "hidden")}}
+     "再次点击以配置按键"]
+    (when (:button-receiving? @state)
+      (button-receive-overlay))
+    (tip-buttons-overlay
+      ["Del" "清除" {:disabled? (or (not (:focused @state))
+                                    (not (get-in @state
+                                                 (into [:controls] (:focused @state)))))}]
+      ["R" "重置"]
+      ["A" "保存" {:disabled? (= (:controls-unchanged @state) (:controls @state))}])])
 
-(defmethod screen/build :controls-options [this]
-  [:div
-   [:h1 (i18n/text [:screen-title :custom-controls])]
-   [:div {:class (container-class)}
-    (for [action ordered-actions]
-      [:div {:key action :class (control-item-class)}
-       [:div {:class (action-title-class)}
-        (i18n/text [:controls-action action])]
-       [:div {:class (button-slots-class)}
-        (for [[slot-index button] (map-indexed
-                                    vector
-                                    (get-in @this [:controls action]))]
-          (button-slot [action slot-index]
-                       button
-                       (= (:focused @this) [action slot-index])
-                       #(swap! this assoc :focused [action slot-index])
-                       #(swap! this assoc :button-receiving? true)))]])]
-   [:div {:style {:margin-top "32px"
-                  :visibility (if (and (not (:button-receiving? @this))
-                                       (:focused @this)) "visible" "hidden")}}
-    "再次点击以配置按键"]
-   (when (:button-receiving? @this)
-     (button-receive-overlay))
-   (tip-buttons-overlay
-     ["Del" "清除" {:disabled? (or (not (:focused @this))
-                                   (not (get-in @this
-                                                (into [:controls] (:focused @this)))))}]
-     ["R" "重置"]
-     ["A" "保存" {:disabled? (= (:controls-unchanged @this) (:controls @this))}])])
-
-(defmethod screen/on-keydown :controls-options [this event]
+(defn- on-keydown [{:keys [state]} event]
   (let [key (.-code event)
         button {:type :keyboard :button key}
-        [action slot-index] (:focused @this)]
+        [action slot-index] (:focused @state)]
     (cond
-      (:button-receiving? @this)
+      (:button-receiving? @state)
       (if (= key "Escape")
-        (swap! this assoc :button-receiving? false)
-        (swap! this change-button action slot-index button))
+        (swap! state assoc :button-receiving? false)
+        (swap! state change-button action slot-index button))
 
-      (:focused @this)
+      (:focused @state)
       (case key
-        "Enter" (swap! this assoc :button-receiving? true)
-        "Delete" (swap! this change-button action slot-index nil)
+        "Enter" (swap! state assoc :button-receiving? true)
+        "Delete" (swap! state change-button action slot-index nil)
         "Escape" false
-        "KeyA" (save-controls! this (:controls @this))
-        "KeyR" (reset-controls! this)
-        "ArrowUp" (move-focus! this :up)
-        "ArrowRight" (move-focus! this :right)
-        "ArrowDown" (move-focus! this :down)
-        "ArrowLeft" (move-focus! this :left)
+        "KeyA" (save-controls! state (:controls @state))
+        "KeyR" (reset-controls! state)
+        "ArrowUp" (move-focus! state :up)
+        "ArrowRight" (move-focus! state :right)
+        "ArrowDown" (move-focus! state :down)
+        "ArrowLeft" (move-focus! state :left)
         true)
 
-      (= key "KeyA") (save-controls! this (:controls @this))
-      (= key "KeyR") (reset-controls! this)
-      (= key "ArrowUp") (move-focus! this :up)
-      (= key "ArrowRight") (move-focus! this :right)
-      (= key "ArrowDown") (move-focus! this :down)
-      (= key "ArrowLeft") (move-focus! this :left)
+      (= key "KeyA") (save-controls! state (:controls @state))
+      (= key "KeyR") (reset-controls! state)
+      (= key "ArrowUp") (move-focus! state :up)
+      (= key "ArrowRight") (move-focus! state :right)
+      (= key "ArrowDown") (move-focus! state :down)
+      (= key "ArrowLeft") (move-focus! state :left)
 
       :else false)))
+
+(defn make []
+  (let [controls (options-store/slotify-controls
+                   (options-store/get-options :controls))]
+    {:name :controls-options
+     :build build
+     :on-keydown on-keydown
+     :state (r/atom {:controls-unchanged controls
+                     :controls controls
+                     :focused nil
+                     :button-receiving? false})}))
+

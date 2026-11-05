@@ -1,6 +1,7 @@
 (ns tetris.screens.multiplayer.start-button
   (:require ["@base-ui/react/button" :refer [Button]]
             [tetris.i18n.core :as i18n]
+            [tetris.screens.multiplayer.multiplayer-play-screen :as multiplayer-play-screen]
             [tetris.screens.multiplayer.room-manager :as room-manager]
             [tetris.screens.screen-stack :as screen-stack]
             [tetris.screens.styles.button :as styles.button]))
@@ -11,7 +12,7 @@
     :unready (room-manager/toggle-ready)
     :start-game (let [resp (await (room-manager/enter-game))]
                   (when (= (:code resp) :ok)
-                    (screen-stack/replace-screen! :multiplayer)))))
+                    (screen-stack/replace-screen! (multiplayer-play-screen/make))))))
 
 (defn start-button [local-user room players]
   (let [me (first (filter #(= (:id %) (:id local-user)) players))

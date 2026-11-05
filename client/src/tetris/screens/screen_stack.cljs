@@ -1,12 +1,18 @@
 (ns tetris.screens.screen-stack
-  (:require-macros [cljss.core])
   (:require
-    [cljss.core :as css :refer-macros [defstyles]]
     [reagent.core :as r]
-    [reagent.dom.client :as rd]
-    [reagent.ratom :as ratom]
-    [tetris.audio :as audio]
-    [tetris.screens.screen :as screen]))
+    [tetris.audio :as audio]))
+
+(def Screen
+  [:map
+   [:name :keyword]
+   [:build fn?]         ; 渲染/构建UI
+   [:on-entering {:optional true} fn?]   ; 当首次进入
+   [:on-exiting {:optional true} fn?]    ; 当退出
+   [:on-suspending {:optional true} fn?] ; 当push另一个screen
+   [:on-resuming {:optional true} fn?]   ; 当pop后
+   [:on-keydown {:optional true} fn?]    ; 当按键按下
+   [:on-update {:optional true} fn?]])
 
 (def ^:private state (r/atom {:stack []}))
 
@@ -19,80 +25,44 @@
 (defn- replace-screen [state screen]
   (update state :stack #(conj (pop %) screen)))
 
-(defn- active-screen [state]
-  (peek (:stack state)))
+(defn active-screen []
+  (peek (:stack @state)))
 
-(defonce ^:private root
-  (delay (rd/create-root (.getElementById js/document "app"))))
+(defn- trigger-callback [screen callback-key & args]
+  (when-let [cb (callback-key screen)]
+    (apply cb screen args)))
 
-(defstyles screen-class []
-  {:display "flex"
-   :justify-content "center"
-   :flex-direction "column"
-   :align-items "center"
-   :width "100%"
-   :text-align "center"
-   :user-select "none"
-   "h1" {:z-index 4 :margin-bottom "32px"}})
+(defn- load-screen! [screen cb]
+  (let [load! (fn [screen]
+                (cb screen)
+                (trigger-callback screen :on-entering))]
+    (if (instance? js/Promise screen)
+      (.then screen load!)
+      (load! screen))))
 
-(defn- add-class-and-key [view class-name key]
-  (let [[tag props & children] view]
-    (into [tag]
-          (if (map? props)
-            [(merge {:key key
-                     :class (into (flatten [(:class props)]) [class-name])}
-                    (dissoc props :class))
-             children]
-            [{:key key :class class-name} props children]))))
-
-(defn- render-screen []
-  (when-let [screen-state (active-screen @state)]
-    (when-let [view (screen/build screen-state)]
-      (add-class-and-key view
-                         (screen-class)
-                         (name (:id @screen-state))))))
-
-(defn- ^:async init-screen [screen-id init-args]
-  (let [screen-state (await (apply screen/init screen-id init-args))
-        with-id (fn [m] (assoc (or m {}) :id screen-id))]
-    (if (instance? ratom/RAtom screen-state)
-      (do (swap! screen-state with-id)
-          screen-state)
-      (r/atom (with-id screen-state)))))
-
-(defn push-screen! [screen-id & init-args]
-  (when-let [screen (active-screen @state)]
-    (screen/on-suspending screen))
-  (.then (init-screen screen-id init-args)
-         (fn [screen]
-           (swap! state push-screen screen)
-           (screen/on-entering screen))))
+(defn push-screen!
+  {:malli/schema [:=> [:cat Screen] :any]}
+  [screen]
+  (trigger-callback (active-screen) :on-suspending)
+  (load-screen! screen #(swap! state push-screen %)))
 
 (defn pop-screen! []
   (tap> (:stack @state))
   (when (seq (:stack (pop-screen @state)))
-    (when-let [screen (active-screen @state)]
-      (screen/on-exiting screen))
-    (swap! state pop-screen)
-    (screen/on-resuming (active-screen @state))
-    (audio/play :screen-back)))
+    (trigger-callback (active-screen) :on-exiting))
+  (swap! state pop-screen)
+  (trigger-callback (active-screen) :on-resuming)
+  (audio/play :screen-back))
 
-(defn replace-screen! [screen-id & init-args]
-  (when-let [screen (active-screen @state)]
-    (screen/on-exiting screen))
-  (.then (init-screen screen-id init-args)
-         (fn [screen]
-           (swap! state replace-screen screen)
-           (screen/on-entering screen))))
+(defn replace-screen!
+  {:malli/schema [:=> [:cat Screen] :any]}
+  [screen]
+  (trigger-callback (active-screen) :on-exiting)
+  (load-screen! screen #(swap! state replace-screen %)))
 
-(defn- on-keydown [event]
-  (when-let [screen (active-screen @state)]
-    (let [handled? (screen/on-keydown screen event)]
+(defn on-keydown [event]
+  (when-let [screen (active-screen)]
+    (let [handled? (trigger-callback screen :on-keydown event)]
       (when (and (not handled?) (= (.-code event) "Escape"))
         (pop-screen!)))))
-
-(defn render []
-  (.removeEventListener js/window "keydown" on-keydown)
-  (.addEventListener js/window "keydown" on-keydown)
-  (rd/render @root [render-screen]))
 

@@ -1,15 +1,15 @@
 (ns tetris.screens.replay-screen
   (:require-macros [cljss.core])
   (:require [cljss.core :as css :refer-macros [defstyles]]
+            [reagent.core :as r]
             [tetris.core.ruleset.classic :refer [make-classic-ruleset]]
             [tetris.core.ruleset.modern :refer [make-modern-ruleset]]
             [tetris.core.tick :as tick]
             [tetris.input.keyboard :as keyboard]
-            [tetris.scenes.replay :as replay]
             [tetris.scenes.render.pixi-app :as app]
+            [tetris.scenes.replay :as replay]
             [tetris.screens.menu.core :as menu]
             [tetris.screens.menu.menu-overlay :refer [menu-overlay]]
-            [tetris.screens.screen :as screen]
             [tetris.screens.screen-stack :as screen-stack]))
 
 (def pixi-app (atom nil))
@@ -31,13 +31,45 @@
                             options))]
     (await (replay/start @pixi-app game-state replay-events))))
 
-(defmethod screen/init :replay [_ replay]
-  {:loading? true
-   :replay replay
-   :scene-state nil
-   :game-status :playing})
+(defstyles gameplay-menu-class []
+  {:background "rgba(0, 0, 0, 0.6)"
+   :backdrop-filter "blur(0.1em)"
+   :padding "1em 2em"})
 
-(defmethod screen/on-entering :replay [this] 
+(defn- loading-overlay []
+  [:div {:style {:z-index 3
+                 :font-size 24}}
+   "加载中..."])
+
+(declare make)
+
+(defn- build [{this :state}]
+  [:div
+   [:div {:style {:position "absolute"
+                  :top "1rem"}}
+    (if (= (:game-status @this) :ended) "回放结束" "回放中")]
+   (cond
+     (:loading? @this) [loading-overlay]
+     (contains? #{:pause :game-over :ended} (:game-status @this))
+     [menu-overlay
+      {:menu-items
+       [(menu/item :start-over nil 1)
+        (menu/item :continue-replay nil 2)
+        (menu/item :exit-replay nil 3)]
+       :default-hover :exit-replay
+       :on-enter
+       (fn [item]
+         (case (:id item)
+           :continue-replay (do (swap! this assoc :game-status :playing)
+                                (swap! (:scene-state @this) assoc :status :playing))
+           :start-over (screen-stack/replace-screen!
+                         (make (select-keys (:replay @this) [:mode :seed :replay-events])))
+           :exit-replay (screen-stack/pop-screen!)
+           nil))
+       :menu-class gameplay-menu-class}]
+     :else nil)])
+
+(defn- on-entering [{this :state}] 
   (when (contains? #{:marathon :classic} (get-in @this [:replay :mode]))
     (let [scene-state-promise (load-scene (:replay @this))]
       (.then scene-state-promise
@@ -58,47 +90,10 @@
                                 (assoc screen
                                        :game-status (:status new)))))))))))))
 
-(defmethod screen/on-exiting :replay []
+(defn- on-exiting []
   (destroy-scene))
 
-(defstyles gameplay-menu-class []
-  {:background "rgba(0, 0, 0, 0.6)"
-   :backdrop-filter "blur(0.1em)"
-   :padding "1em 2em"})
-
-(defn- loading-overlay []
-  [:div {:style {:z-index 3
-                 :font-size 24}}
-   "加载中..."])
-
-(defmethod screen/build :replay [this]
-  [:div
-   [:div {:style {:position "absolute"
-                  :top "1rem"}}
-    (if (= (:game-status @this) :ended) "回放结束" "回放中")]
-   (cond
-     (:loading? @this) [loading-overlay]
-     (contains? #{:pause :game-over :ended} (:game-status @this))
-     [menu-overlay
-      {:menu-items
-       [(menu/item :start-over nil 1)
-        (menu/item :continue-replay nil 2)
-        (menu/item :exit-replay nil 3)]
-       :default-hover :exit-replay
-       :on-enter
-       (fn [item]
-         (case (:id item)
-           :continue-replay (do (swap! this assoc :game-status :playing)
-                                (swap! (:scene-state @this) assoc :status :playing))
-           :start-over (screen-stack/replace-screen!
-                         :replay
-                         (select-keys (:replay @this) [:mode :seed :replay-events]))
-           :exit-replay (screen-stack/pop-screen!)
-           nil))
-       :menu-class gameplay-menu-class}]
-     :else nil)])
-
-(defmethod screen/on-keydown :replay [this event]
+(defn- on-keydown [{this :state} event]
   (when (= (.-code event) "Escape")
     (if (= (:status @(:scene-state @this)) :game-over)
       (screen-stack/pop-screen!)
@@ -110,3 +105,15 @@
         (swap! this assoc :game-status new-game-status)
         (swap! (:scene-state @this) assoc :status new-game-status))))
   true)
+
+(defn make [replay]
+  {:name :replay
+   :build build
+   :on-entering on-entering
+   :on-exiting on-exiting
+   :on-keydown on-keydown
+   :state (r/atom {:loading? true
+                   :replay replay
+                   :scene-state nil
+                   :game-status :playing})})
+

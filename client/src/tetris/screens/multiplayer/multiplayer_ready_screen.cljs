@@ -9,17 +9,13 @@
     [tetris.screens.multiplayer.player-slot :refer [player-slots]]
     [tetris.screens.multiplayer.room-manager :as room-manager]
     [tetris.screens.multiplayer.start-button :refer [start-button]]
-    [tetris.screens.screen :as screen]
     [tetris.screens.screen-stack :as screen-stack]
     [tetris.screens.styles.button :as styles.button]))
 
-(defmethod screen/init :multiplayer-ready [_ {:keys [room users]}]
-  (r/atom (room-manager/make room users)))
-
-(defmethod screen/on-entering :multiplayer-ready [this]
+(defn- on-entering [{:keys [state]}]
   (audio/load-sounds :multiplayer)
   (room-manager/listen-events
-    this
+    state
     {:on-player-joined #(audio/play :multiplayer/player-joined)
      :on-player-left #(audio/play :multiplayer/player-left)
      :on-player-ready (fn [me? ready? all-readied?]
@@ -30,8 +26,8 @@
                                           :multiplayer/player-ready
                                           :multiplayer/player-unready)))))}))
 
-(defmethod screen/build :multiplayer-ready [this]
-  (let [{:keys [room players]} @this]
+(defn- build [{:keys [state]}]
+  (let [{:keys [room players]} @state]
     [:div
      (player-slots room players)
      [:div {:style {:margin-top "2rem"}}
@@ -40,6 +36,10 @@
        (i18n/text [:multiplayer :leave])]
       (start-button (api/local-user) room players)]]))
 
-(defmethod screen/on-exiting :multiplayer-ready []
-  (room-manager/exit))
+(defn make [{:keys [room users]}]
+  {:name :multiplayer-ready
+   :build build
+   :on-entering on-entering
+   :on-exiting room-manager/exit  
+   :state (r/atom (room-manager/make room users))})
 
