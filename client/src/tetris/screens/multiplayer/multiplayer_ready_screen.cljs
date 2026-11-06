@@ -18,14 +18,17 @@
    :top "1rem"
    :left "50%"
    :transform "translateX(-50%)"
-   :font-size "2rem"})
+   ".room-no" {:font-size "2rem" :user-select "text"}
+   ".is-public" {:margin-top "1rem" :color "#999"}})
 
 (defn- build [{:keys [state]}]
   (let [{:keys [room]} @state
         players (room-manager/slot-players @state)]
     [:div
-     [:div {:class (room-info-class)} (:id room)]
-     (player-slots room players)
+     [:div {:class (room-info-class)}
+      [:div {:class "room-no" :title "房号"} (:id room)]
+      [:div {:class "is-public"} (if (:public room) "公开" "不公开")]]
+     (player-slots room players (api/local-user))
      [:div {:style {:margin-top "2rem"}}
       [:> Button {:class (styles.button/overlay-button {:bg-color :danger :full? false})
                   :on-click #(screen-navigator/pop-screen!)}

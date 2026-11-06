@@ -15,6 +15,12 @@
    :background (if readied? "rgba(0,255,0,0.2)" (if empty-slot? "#f4f4f4" "#eee"))
    :outline (when-not empty-slot? "2px solid #333")
    :text-align "center"
+   ".me" {:color "deeppink"}
+   ".is-host" {:position "absolute"
+               :left "50%"
+               :top "1rem"
+               :transform "translateX(-50%)"
+               :color "#999"}
    "&:hover.empty" {:outline "1px solid #666"}})
 
 (defstyles slots-container-class []
@@ -25,8 +31,9 @@
              (not-any? #(= (:slot %) slot) (:players room)))
     (room-manager/change-slot slot)))
 
-(defn player-slot [slot room player]
+(defn player-slot [slot room player local-user]
   (let [empty-slot? (nil? player)
+        me? (= (:id player) (:id local-user))
         host? (= (:id player) (:host room))
         readied? (= (:state player) :readied)]
     [:div {:key slot
@@ -35,17 +42,11 @@
            :title (when empty-slot? "切换到此位置")
            :on-click #(handle-change-slot slot room player)}
      (when host?
-       [:div {:style {:position "absolute"
-                      :right "0.8rem"
-                      :top "0.8rem"
-                      :font-size "0.8rem"}}
-        "[房主]"])
-     [:div (:username player)]
-     (when-not empty-slot?
-       [:div {:style {:margin-top "2rem"}}
-        (if readied? "已准备" "未准备")])]))
+       [:div {:class "is-host"} "房主"])
+     [:div {:class (when me? "me")} (:username player)]]))
 
-(defn player-slots [room players]
+(defn player-slots [room players local-user]
   [:div {:class (slots-container-class)}
-   (map-indexed (fn [slot player] (player-slot slot room player)) players)])
+   (map-indexed (fn [slot player]
+                  (player-slot slot room player local-user)) players)])
 
