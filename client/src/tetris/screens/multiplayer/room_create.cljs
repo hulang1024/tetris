@@ -9,7 +9,7 @@
     [tetris.i18n.core :as i18n]
     [tetris.screens.multiplayer.room-manager :as room-manager]))
 
-(defstyles game-settings-class []
+(defstyles overlay-class []
   {:position "fixed"
    :top "50%"
    :left "50%"
@@ -39,11 +39,11 @@
       (do (messager "创建失败")
           (on-done nil)))))
 
-(defn room-create-overlay [on-done]
-  (r/with-let [state (r/atom {:players-max 3
+(defn room-create-dialog [on-done]
+  (r/with-let [state (r/atom {:players-max 2
                               :public true
                               :game-settings {}})]
-    [:div {:class (game-settings-class)}
+    [:div {:class (overlay-class)}
      [:div {:class (settings-row)}
       [:span {:class "label"} (i18n/text [:create-room :players-max])]
       [:> Input {:type "number"
@@ -51,12 +51,12 @@
                  :max 4
                  :autoFocus true
                  :defaultValue (:players-max @state)
-                 :on-value-change #(swap! state assoc :players-max (js/parseInt %))}]]
+                 :on-value-change #(swap! state assoc :players-max (js/parseInt %1))}]]
      [:div {:class (settings-row)}
       [:span {:class "label"} (i18n/text [:create-room :is-public])]
       [:> Input {:type "checkbox"
                  :checked (:public @state)
-                 :on-value-change #(swap! state assoc :public %)}]]
+                 :on-change #(swap! state assoc :public (.. % -target -checked))}]]
 
      [:> Button {:class (styles.button/overlay-button {:bg-color :primary})
                  :on-click #(handle-create-room @state on-done js/alert)}

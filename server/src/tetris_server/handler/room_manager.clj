@@ -6,64 +6,63 @@
 (defn del-room [rooms room]
   (dissoc rooms (:id room)))
 
-(defn new-room-manager [] {:rooms (atom {})})
+(defn new-room-manager [] (atom {:rooms {}}))
 
-(defn get-rooms [rm]
-  (vec (vals @(:rooms rm))))
+(defn get-rooms [manager]
+  (vec (vals (:rooms @manager))))
 
-(defn get-match-room [rm _uid]
-  (first (vals @(:rooms rm))))
+(defn get-match-room [manager _uid]
+  (first (vals (:rooms @manager))))
 
-(defn get-room [rm room-id]
-  (get @(:rooms rm) room-id))
+(defn get-room [manager room-id]
+  (get (:rooms @manager) room-id))
 
 (defn add-room!
   {:malli/schema [:=> [:cat some? CreateRoom] Room]}
-  [rm room]
-  (let [room (room/make-room 
-               (assoc room
-                      :id (str (java.util.UUID/randomUUID))
-                      :created-at (System/currentTimeMillis)))]
-    (swap! (:rooms rm) put-room room)
+  [manager room]
+  (let [id (format "%04x" (+ 10000 (count (keys (:rooms @manager)))))
+        room (room/make-room 
+               (assoc room :id id :created-at (System/currentTimeMillis)))]
+    (swap! manager update :rooms put-room room)
     room))
 
-(defn join-room! [rm room-id uid]
-  (when-let [room (get-room rm room-id)]
+(defn join-room! [manager room-id uid]
+  (when-let [room (get-room manager room-id)]
     (let [room (room/join room uid)]
-      (swap! (:rooms rm) put-room room)
+      (swap! manager update :rooms put-room room)
       room)))
 
-(defn leave-room! [rm room-id uid]
-  (when-let [room (get-room rm room-id)]
+(defn leave-room! [manager room-id uid]
+  (when-let [room (get-room manager room-id)]
     (let [room (room/leave room uid)]
-      (swap! (:rooms rm)
+      (swap! manager update :rooms 
              (if (seq (:players room)) put-room del-room)
              room)
       room)))
 
-(defn toggle-ready! [rm room-id uid]
-  (when-let [room (get-room rm room-id)]
+(defn toggle-ready! [manager room-id uid]
+  (when-let [room (get-room manager room-id)]
     (let [room (room/toggle-ready room uid)]
-      (swap! (:rooms rm) put-room room)
+      (swap! manager update :rooms put-room room)
       room)))
 
-(defn change-slot! [rm room-id uid slot]
-  (when-let [room (get-room rm room-id)]
-    (when-let [room (room/change-slot room uid slot)]
-      (swap! (:rooms rm) put-room room)
+(defn change-slot! [manager room-id uid slot]
+  (when-let [room (get-room manager room-id)]
+    (let [room (room/change-slot room uid slot)]
+      (swap! manager update :rooms put-room room)
       room)))
 
-(defn enter-game! [rm room-id force?]
-  (when-let [room (get-room rm room-id)]
+(defn enter-game! [manager room-id force?]
+  (when-let [room (get-room manager room-id)]
     (let [room (room/enter-game room force?)]
-      (swap! (:rooms rm) put-room room)
+      (swap! manager update :rooms put-room room)
       room)))
 
-(defn request-start-game! [rm room-id uid]
-  (when-let [room (get-room rm room-id)]
+(defn request-start-game! [manager room-id uid]
+  (when-let [room (get-room manager room-id)]
     (let [room (room/request-start-game room uid)]
-      (swap! (:rooms rm) put-room room)
+      (swap! manager update :rooms put-room room)
       room)))
 
-(defn get-joined-room [rm uid]
-  (first (filter #(room/joined? % uid) (vals @(:rooms rm)))))
+(defn get-joined-room [manager uid]
+  (first (filter #(room/joined? % uid) (vals (:rooms @manager)))))

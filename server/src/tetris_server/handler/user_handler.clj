@@ -38,8 +38,7 @@
         user (authenticate datasource username password)]
     (if user
       (assoc (api-response :ok {:user (user/safe-user-info user)})
-             :session/key (or (:session/key request)
-                              (str (java.util.UUID/randomUUID)))
+             :session/key (:session/key request)
              :session {:uid (:id user)})
       (api-response :failed))))
 

@@ -40,7 +40,12 @@
            :password "密码"
            :button "登录"}
    :register {:button "注册"}
+   :ok "确定"
    :cancel "取消"
+   :join-room {:button "加入房间"
+               :room-no "房号"
+               :not-found "未找到房间"
+               :failed "加入失败"}
    :multiplayer {:leave "离开游戏"
                  :start-game "开始游戏"
                  :force-start-game "强制开始游戏"

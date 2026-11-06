@@ -64,7 +64,7 @@
 (defn create-room [room]
   (api/post "/room/create-room" room))
 
-(defn join-room [room-id quick-join?]
+(defn join-room [room-id & [quick-join?]]
   (api/post "/room/join-room"
             (if quick-join? {:quick_join true} {:room_id room-id})))
 

@@ -10,7 +10,8 @@
     [tetris.screens.menu.core :as menu]
     [tetris.screens.menu.menu-overlay :refer [menu-overlay]]
     [tetris.screens.multiplayer.multiplayer-ready-screen :as multiplayer-ready-screen]
-    [tetris.screens.multiplayer.room-create :refer [room-create-overlay]]
+    [tetris.screens.multiplayer.room-create :refer [room-create-dialog]]
+    [tetris.screens.multiplayer.room-join :refer [room-join-dialog]]
     [tetris.screens.multiplayer.room-manager :as room-manager]
     [tetris.screens.screen-navigator :as screen-navigator]
     [tetris.screens.solo-play-screen :as solo-play-screen]
@@ -44,11 +45,17 @@
     (when (:login-opened @state)
       [logic-overlay #(swap! state assoc :login-opened false)])]
    (when (:room-create-opened @state)
-     [room-create-overlay (fn [{:keys [room users]}]
-                            (swap! state assoc :room-create-opened false)
-                            (when room
-                              (screen-navigator/push-screen!
-                                (multiplayer-ready-screen/make {:room room :users users}))))])
+     [room-create-dialog (fn [{:keys [room users]}]
+                           (swap! state assoc :room-create-opened false)
+                           (when room
+                             (screen-navigator/push-screen!
+                               (multiplayer-ready-screen/make {:room room :users users}))))])
+   (when (:room-join-opened @state)
+     [room-join-dialog (fn [{:keys [room users]}]
+                         (swap! state assoc :room-join-opened false)
+                         (when room
+                           (screen-navigator/push-screen!
+                             (multiplayer-ready-screen/make {:room room :users users}))))])
    [menu-overlay
     {:state (:menu @state)
      :on-enter (fn [{:keys [id parent] screen-maker :data}]
@@ -59,7 +66,7 @@
                    (swap! state assoc :login-opened true)
 
                    (= id :quick-join-room) (join-room nil true)
-                   (= id :join-room) (js/alert "TODO")
+                   (= id :join-room) (swap! state assoc :room-join-opened true)
                    (= id :create-room) (swap! state assoc :room-create-opened true)
 
                    :else (when screen-maker (screen-navigator/push-screen! (screen-maker)))))
@@ -89,4 +96,5 @@
                   #_(menu/item :audio-options :options 3 {:screen-name :audio-options})]
                  :solo))
              :login-opened false
-             :room-create-opened false})})
+             :room-create-opened false
+             :room-join-opened false})})

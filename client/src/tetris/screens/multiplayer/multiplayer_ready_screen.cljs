@@ -2,6 +2,7 @@
   (:require-macros [cljss.core])
   (:require
     ["@base-ui/react/button" :refer [Button]]
+    [cljss.core :as css :refer-macros [defstyles]]
     [reagent.core :as r]
     [tetris.audio :as audio]
     [tetris.i18n.core :as i18n]
@@ -11,6 +12,25 @@
     [tetris.screens.multiplayer.start-button :refer [start-button]]
     [tetris.screens.screen-navigator :as screen-navigator]
     [tetris.screens.styles.button :as styles.button]))
+
+(defstyles room-info-class []
+  {:position "absolute"
+   :top "1rem"
+   :left "50%"
+   :transform "translateX(-50%)"
+   :font-size "2rem"})
+
+(defn- build [{:keys [state]}]
+  (let [{:keys [room]} @state
+        players (room-manager/slot-players @state)]
+    [:div
+     [:div {:class (room-info-class)} (:id room)]
+     (player-slots room players)
+     [:div {:style {:margin-top "2rem"}}
+      [:> Button {:class (styles.button/overlay-button {:bg-color :danger :full? false})
+                  :on-click #(screen-navigator/pop-screen!)}
+       (i18n/text [:multiplayer :leave])]
+      (start-button (api/local-user) room players)]]))
 
 (defn- on-entering [{:keys [state]}]
   (audio/load-sounds :multiplayer)
@@ -26,17 +46,6 @@
                               (audio/play (if ready?
                                             :multiplayer/player-ready
                                             :multiplayer/player-unready))))))}))
-
-(defn- build [{:keys [state]}]
-  (let [{:keys [room]} @state
-        players (room-manager/slot-players @state)]
-    [:div
-     (player-slots room players)
-     [:div {:style {:margin-top "2rem"}}
-      [:> Button {:class (styles.button/overlay-button {:bg-color :danger :full? false})
-                  :on-click #(screen-navigator/pop-screen!)}
-       (i18n/text [:multiplayer :leave])]
-      (start-button (api/local-user) room players)]]))
 
 (defn make [{:keys [room users]}]
   {:name :multiplayer-ready
