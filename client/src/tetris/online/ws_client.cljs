@@ -6,7 +6,8 @@
            :conn nil
            :event-handlers {:player-joined {}
                             :player-left {}
-                            :player-ready {}}}))
+                            :player-ready {}
+                            :player-slot-changed {}}}))
 
 (defn- dispatch-message! [raw-data]
   (let [event (if (string? raw-data)

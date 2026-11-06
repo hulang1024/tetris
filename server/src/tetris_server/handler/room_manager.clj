@@ -47,6 +47,12 @@
       (swap! (:rooms rm) put-room room)
       room)))
 
+(defn change-slot! [rm room-id uid slot]
+  (when-let [room (get-room rm room-id)]
+    (when-let [room (room/change-slot room uid slot)]
+      (swap! (:rooms rm) put-room room)
+      room)))
+
 (defn enter-game! [rm room-id force?]
   (when-let [room (get-room rm room-id)]
     (let [room (room/enter-game room force?)]

@@ -43,6 +43,10 @@
     (fn [{:keys [room player]}]
       (swap! state assoc :room room)
       (on-player-ready (:room @state) (player-info @state player))))
+
+  (ws-client/subscribe!
+    :player-slot-changed
+    (fn [{:keys [room]}] (swap! state assoc :room room)))
   state)
 
 (defn leave-room []
@@ -50,6 +54,9 @@
 
 (defn toggle-ready []
   (api/post "/room/toggle-ready"))
+
+(defn change-slot [slot]
+  (api/post "/room/change-slot" {:slot slot}))
 
 (defn enter-game []
   (api/post "/room/enter-game"))

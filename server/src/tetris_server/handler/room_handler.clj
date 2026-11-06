@@ -13,11 +13,14 @@
    [:game-settings [:map]]])
 
 (def JoinRoomRequest
-  [:or
+  [:and
    [:map
-    [:room-id :string]
-    [:quick-join :boolean]]
+    [:room-id {:optional true} :string]
+    [:quick-join {:optional true} :boolean]]
    [:fn (fn [{:keys [room-id quick-join]}] (or room-id quick-join))]])
+
+(def ChangeSlotRequest
+  [:map [:slot [:int {:min 0}]]])
 
 (def SearchRoomRequest [:map])
 
@@ -59,8 +62,7 @@
                             {:room room
                              :users (user/get-user-infos datasource (room/player-uids room))})))))
 
-(defn leave-room [{:keys [room-manager]
-                   {:keys [uid]} :session}]
+(defn leave-room [{:keys [room-manager] {:keys [uid]} :session}]
   (let [room (room-manager/get-joined-room room-manager uid)]
     (cond
       (nil? room) (api-response :not-found)
@@ -70,19 +72,33 @@
               (ws/broadcast-event! uids :player-left {:room room :player player})
               (api-response :ok)))))
 
-(defn toggle-ready [{:keys [room-manager]
-                     {:keys [uid]} :session}]
+(defn toggle-ready [{:keys [room-manager] {:keys [uid]} :session}]
   (let [room (room-manager/get-joined-room room-manager uid)]
     (cond
       (nil? room) (api-response :not-found)
-      :else (let [room (room-manager/toggle-ready! room-manager (:id room) uid)
-                  uids (room/player-uids room)]
-              (ws/broadcast-event! uids :player-ready
+      :else (let [room (room-manager/toggle-ready! room-manager (:id room) uid)]
+              (ws/broadcast-event! (room/player-uids room)
+                                   :player-ready
                                    {:room room :player (room/find-player room uid)})
               (api-response :ok)))))
 
-(defn enter-game [{:keys [room-manager]
-                   {:keys [uid]} :session}]
+(defn change-slot [{:keys [room-manager]
+                    {:keys [slot]} :json-params
+                    {:keys [uid]} :session}]
+  (let [room (room-manager/get-joined-room room-manager uid)]
+    (cond
+      (nil? room) (api-response :not-found)
+      :else (let [old-slot (:slot (room/find-player room uid))
+                  room (room-manager/change-slot! room-manager (:id room) uid slot)
+                  player (room/find-player room uid)
+                  changed? (and (not= old-slot slot) (= (:slot player) slot))]
+              (when changed?
+                (ws/broadcast-event! (room/player-uids room)
+                                     :player-slot-changed
+                                     {:room room :player player}))
+              (api-response (if changed? :ok :failed))))))
+
+(defn enter-game [{:keys [room-manager] {:keys [uid]} :session}]
   (let [room (room-manager/get-joined-room room-manager uid)]
     (cond
       (nil? room) (api-response :not-found)
@@ -94,8 +110,7 @@
                 (ws/broadcast-event! (room/player-uids room) :game-entered {:room room}))
               (api-response (if started? :ok :failed))))))
 
-(defn request-start-game [{:keys [room-manager]
-                           {:keys [uid]} :session}]
+(defn request-start-game [{:keys [room-manager] {:keys [uid]} :session}]
   (let [room (room-manager/get-joined-room room-manager uid)]
     (cond
       (nil? room) (api-response :not-found)

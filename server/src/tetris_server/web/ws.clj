@@ -46,8 +46,8 @@
                          (.array byte-buffer)))))
      :on-close (fn [_channel {:keys [room-manager] {:keys [uid]} :session} _reason]                    
                  (del! uid)
-                 (when-let [room (room-manager/get-joined-room room-manager uid)]
-                   (room-manager/leave-room! room-manager (:id room) uid)
-                   (broadcast-event! (room/player-uids room) :player-left
-                                     {:room room
-                                      :player (room/find-player room uid)})))}))
+                 (when-let [joined-room (room-manager/get-joined-room room-manager uid)]
+                   (let [room (room-manager/leave-room! room-manager (:id joined-room) uid)]
+                     (broadcast-event! (room/player-uids room)
+                                       :player-left
+                                       {:room room :player (room/find-player room uid)}))))}))

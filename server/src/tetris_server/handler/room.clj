@@ -72,7 +72,9 @@
   (assoc room :host host))
 
 (defn change-slot [room uid slot]
-  (update-player room uid #(assoc % :slot slot)))
+  (if (not-any? #(= (:slot %) slot) (:players room))
+    (update-player room uid #(assoc % :slot slot))
+    room))
 
 (defn leave [room uid]
   (let [room (update room :players
