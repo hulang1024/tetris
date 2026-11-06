@@ -1,13 +1,12 @@
 (ns tetris.screens.multiplayer.room-create 
   (:require-macros [cljss.core])
   (:require
-    ["@base-ui/react/button" :refer [Button]]
     ["@base-ui/react/input" :refer [Input]]
     [cljss.core :as css :refer-macros [defstyles]]
-    [tetris.screens.styles.button :as styles.button]
     [reagent.core :as r]
     [tetris.i18n.core :as i18n]
-    [tetris.screens.multiplayer.room-manager :as room-manager]))
+    [tetris.screens.multiplayer.room-manager :as room-manager]
+    [tetris.ui.button :refer [button]]))
 
 (defstyles overlay-class []
   {:position "fixed"
@@ -58,9 +57,8 @@
                  :checked (:public @state)
                  :on-change #(swap! state assoc :public (.. % -target -checked))}]]
 
-     [:> Button {:class (styles.button/overlay-button {:bg-color :primary})
-                 :on-click #(handle-create-room @state on-done js/alert)}
-      (i18n/text [:create-room :ok])]
-     [:> Button {:class (styles.button/overlay-button)
-                 :on-click #(on-done nil)}
-      (i18n/text :cancel)]]))
+     (button {:bg-color :primary
+              :on-click #(handle-create-room @state on-done js/alert)}
+             (i18n/text [:create-room :ok]))
+     (button {:on-click #(on-done nil)}
+             (i18n/text :cancel))]))

@@ -9,10 +9,10 @@
             [tetris.core.tick :as tick]
             [tetris.input.keyboard :as keyboard]
             [tetris.options-store :as options-store]
+            [tetris.ui.menu :as menu]
+            [tetris.ui.menu-overlay :refer [menu-overlay]]
             [tetris.scenes.gameplay :as gameplay]
             [tetris.scenes.render.pixi-app :as app]
-            [tetris.screens.menu.core :as menu]
-            [tetris.screens.menu.menu-overlay :refer [menu-overlay]]
             [tetris.screens.replay-screen :as replay-screen]
             [tetris.screens.screen-navigator :as screen-navigator]
             [tetris.screens.controls-options-screen :as controls-options-screen]))
@@ -64,7 +64,7 @@
                        #(not= (:id %) :continue-game)
                        identity)))
        :default-hover :continue-game
-       :on-enter
+       :on-select
        (fn [item]
          (when (contains? #{:start-over} (:id item))
            (audio/play :gameplay))

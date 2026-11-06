@@ -1,13 +1,12 @@
 (ns tetris.screens.user
   (:require-macros [cljss.core])
   (:require
-    ["@base-ui/react/button" :refer [Button]]
     ["@base-ui/react/input" :refer [Input]]
     [cljss.core :as css :refer-macros [defstyles]]
-    [tetris.screens.styles.button :as styles.button]
     [reagent.core :as r]
+    [tetris.i18n.core :as i18n]
     [tetris.online.api :as api]
-    [tetris.i18n.core :as i18n]))
+    [tetris.ui.button :refer [button]]))
 
 (defstyles display-user-class []
   {:width "6rem"
@@ -76,23 +75,22 @@
                  :on-value-change #(swap! state assoc :password %)}]]
      [:span {:style {:min-height "1rem"
                      :color "orangered"}} (:message @state)]
-     [:> Button {:class (styles.button/overlay-button {:bg-color :primary})
-                 :on-click (fn []
-                             (set-message nil)
-                             (handle-login @state on-done set-message))}
-      (i18n/text [:login :button]) ]
-     [:> Button {:class (styles.button/overlay-button {:bg-color :second})
-                 :on-click (fn []
-                             (set-message nil)
-                             (handle-register @state
-                                              (fn [user]
-                                                (swap! state conj user)
-                                                (on-done))
-                                              set-message))}
-      (i18n/text [:register :button])]
-     [:> Button {:class (styles.button/overlay-button)
-                 :on-click on-done}
-      (i18n/text :cancel)]]
+     (button {:bg-color :primary
+              :on-click (fn []
+                          (set-message nil)
+                          (handle-login @state on-done set-message))}
+             (i18n/text [:login :button]) )
+     (button {:bg-color :second
+              :on-click (fn []
+                          (set-message nil)
+                          (handle-register @state
+                                           (fn [user]
+                                             (swap! state conj user)
+                                             (on-done))
+                                           set-message))}
+             (i18n/text [:register :button]))
+     (button {:on-click on-done}
+             (i18n/text :cancel))]
     (finally
       (js/document.removeEventListener "keydown" keydown-event-listener))))
 

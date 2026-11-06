@@ -1,7 +1,6 @@
 (ns tetris.screens.multiplayer.multiplayer-ready-screen
   (:require-macros [cljss.core])
   (:require
-    ["@base-ui/react/button" :refer [Button]]
     [cljss.core :as css :refer-macros [defstyles]]
     [reagent.core :as r]
     [tetris.audio :as audio]
@@ -11,7 +10,7 @@
     [tetris.screens.multiplayer.room-manager :as room-manager]
     [tetris.screens.multiplayer.start-button :refer [start-button]]
     [tetris.screens.screen-navigator :as screen-navigator]
-    [tetris.screens.styles.button :as styles.button]))
+    [tetris.ui.button :refer [button]]))
 
 (defstyles room-info-class []
   {:position "absolute"
@@ -30,13 +29,12 @@
       [:div {:class "is-public"} (if (:public room) "公开" "不公开")]]
      (player-slots room players (api/local-user))
      [:div {:style {:margin-top "2rem"}}
-      [:> Button {:class (styles.button/overlay-button {:bg-color :danger :full? false})
-                  :on-click #(screen-navigator/pop-screen!)}
-       (i18n/text [:multiplayer :leave])]
+      (button {:bg-color :danger :full? false
+               :on-click #(screen-navigator/pop-screen!)}
+              (i18n/text [:multiplayer :leave]))
       (start-button (api/local-user) room players)]]))
 
 (defn- on-entering [{:keys [state]}]
-  (audio/load-sounds :multiplayer)
   (room-manager/listen-events
     state
     {:on-player-joined #(audio/play :multiplayer/player-joined)
@@ -48,7 +46,10 @@
                             (when (= (:id player) (:id (api/local-user)))
                               (audio/play (if ready?
                                             :multiplayer/player-ready
-                                            :multiplayer/player-unready))))))}))
+                                            :multiplayer/player-unready))))))})
+  (audio/load-sounds :multiplayer)
+  (when (= (count (get-in @state [:room :players])) 1)
+    (audio/play :multiplayer/player-joined)))
 
 (defn make [{:keys [room users]}]
   {:name :multiplayer-ready

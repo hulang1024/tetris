@@ -5,7 +5,7 @@
     [reagent.core :as r]
     [tetris.i18n.core :as i18n]
     [tetris.options-store :as options-store]
-    [tetris.screens.styles.slider :as slider.styles]
+    [tetris.ui.styles.slider :as slider.styles]
     [tetris.screens.tip-buttons :refer [tip-buttons-overlay]]))
 
 (defn- option-slider [state label key min max]

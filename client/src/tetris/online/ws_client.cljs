@@ -4,20 +4,18 @@
 (defonce ^:private state
   (r/atom {:state :offline
            :conn nil
+           :event-queue []
            :event-handlers {:player-joined {}
                             :player-left {}
                             :player-ready {}
                             :player-slot-changed {}}}))
 
-(defn- dispatch-message! [raw-data]
-  (let [event (if (string? raw-data)
-                (js->clj (js/JSON.parse raw-data)
-                         :keywordize-keys true)
-                raw-data)
-        event-type (keyword (:type event))]
-    (doseq [[_k handler]
-            (get-in @state [:event-handlers event-type])]
-      (handler (:data event)))))
+(defn- dispatch-event! [event]
+  (let [handlers (get-in @state [:event-handlers (:type event)])]
+    (if (seq handlers)
+      (doseq [[_k handler] handlers]
+        (handler (:data event)))
+      (swap! state update :event-queue conj event))))
 
 (defn connect! []
   (let [ws (js/WebSocket. (str "ws://" js/location.host "/api/ws"))]
@@ -29,7 +27,14 @@
     (.addEventListener ws "close"
                        (fn [] (swap! state assoc :state :offline)))
     (.addEventListener ws "message"
-                       (fn [event] (dispatch-message! (.-data event))))))
+                       (fn [event]
+                         (let [raw-data (.-data event)
+                               event (if (string? raw-data)
+                                       (-> (js->clj (js/JSON.parse raw-data)
+                                                    :keywordize-keys true)
+                                           (update :type keyword))
+                                       raw-data)]
+                           (dispatch-event! event))))))
 
 (defn on-api-state-change [api-state]
   (cond
@@ -38,9 +43,16 @@
 
 (defn subscribe!
   ([event-type handler]
-   (subscribe! event-type event-type handler))
-  ([event-type handler-key handler]
-   (swap! state assoc-in [:event-handlers event-type handler-key] handler)))
+   (subscribe! event-type event-type handler false))
+  ([event-type handler take-queue?]
+   (subscribe! event-type event-type handler take-queue?))
+  ([event-type handler-key handler take-queue?]
+   (swap! state assoc-in [:event-handlers event-type handler-key] handler)
+   (when take-queue?
+     (let [events (filter #(= (:type %) event-type) (:event-queue @state))]
+       (run! dispatch-event! events)))
+   (swap! state update :event-queue
+          (fn [events] (filter #(not= (:type %) event-type) events)))))
 
 (defn unsubscribe!
   ([event-type]

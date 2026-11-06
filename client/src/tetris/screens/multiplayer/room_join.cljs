@@ -1,14 +1,13 @@
 (ns tetris.screens.multiplayer.room-join 
   (:require-macros [cljss.core])
   (:require
-    ["@base-ui/react/button" :refer [Button]]
     ["@base-ui/react/input" :refer [Input]]
     [cljss.core :as css :refer-macros [defstyles]]
     [clojure.string :as str]
     [reagent.core :as r]
     [tetris.i18n.core :as i18n]
     [tetris.screens.multiplayer.room-manager :as room-manager]
-    [tetris.screens.styles.button :as styles.button]))
+    [tetris.ui.button :refer [button]]))
 
 (defstyles overlay-class []
   {:position "fixed"
@@ -48,10 +47,9 @@
                  :autoFocus true
                  :placeholder (i18n/text [:join-room :room-no])
                  :on-value-change #(swap! state assoc :room-no (str/trim %))}]]
-     [:> Button {:class (styles.button/overlay-button {:bg-color :primary})
-                 :disabled (= (:room-no @state) "")
-                 :on-click #(handle-join-room @state on-done js/alert)}
-      (i18n/text [:join-room :button])]
-     [:> Button {:class (styles.button/overlay-button)
-                 :on-click #(on-done nil)}
-      (i18n/text :cancel)]]))
+     (button {:bg-color :primary
+              :disabled (= (:room-no @state) "")
+              :on-click #(handle-join-room @state on-done js/alert)}
+             (i18n/text [:join-room :button]))
+     (button {:on-click #(on-done nil)}
+             (i18n/text :cancel))]))

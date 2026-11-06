@@ -1,4 +1,4 @@
-(ns tetris.screens.styles.slider
+(ns tetris.ui.styles.slider
   (:require-macros [cljss.core])
   (:require [cljss.core :refer [defstyles]]))
 
@@ -10,14 +10,14 @@
    :font-size "0.875rem"
    :line-height "1.25rem"
    ::media {[:prefers-color-scheme :dark]
-                {:color "white"}}})
+            {:color "white"}}})
 
 (defstyles value []
   {:font-size "0.875rem"
    :line-height "1.25rem"
    :text-align "end"
    ::media {[:prefers-color-scheme :dark]
-                {:color "white"}}})
+            {:color "white"}}})
 
 (defstyles control []
   {:box-sizing "border-box"
@@ -36,14 +36,14 @@
    :-webkit-user-select "none"
    :user-select "none"
    ::media {[:prefers-color-scheme :dark]
-                {:background-color "oklch(26.9% 0 0deg)"}}})
+            {:background-color "oklch(26.9% 0 0deg)"}}})
 
 (defstyles indicator []
   {:background-color "oklch(34.5% 0 0deg)"
    :-webkit-user-select "none"
    :user-select "none"
    ::media {[:prefers-color-scheme :dark]
-                {:background-color "white"}}})
+            {:background-color "white"}}})
 
 (defstyles thumb []
   {:box-sizing "border-box"
@@ -54,10 +54,10 @@
    :-webkit-user-select "none"
    :user-select "none"
    ::media {[:prefers-color-scheme :dark]
-                {:border "1px solid white"
-                 :background-color "oklch(14.5% 0 0deg)"}}
+            {:border "1px solid white"
+             :background-color "oklch(14.5% 0 0deg)"}}
    "&:has(:focus-visible)"
    {:outline "2px solid oklch(14.5% 0 0deg)"
     :outline-offset "2px"
     ::media {[:prefers-color-scheme :dark]
-                 {:outline-color "white"}}}})
+             {:outline-color "white"}}}})

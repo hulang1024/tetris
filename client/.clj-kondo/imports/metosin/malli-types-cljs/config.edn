@@ -35,7 +35,6 @@
                                                                                       :req {:pressed-buttons :vector,
                                                                                             :just-pressed-buttons :vector,
                                                                                             :tetris.core.input/last-pressed-buttons :vector}}}}}},
-                                        tetris.online.api {get-state {:arities {0 {:args [], :ret :keyword}}}},
                                         tetris.core.tick {step {:arities {2 {:args [{:op :keys,
                                                                                      :req {:tetris.core.tick/lock-timer :int,
                                                                                            :tetris.core.tick/phase :keyword,

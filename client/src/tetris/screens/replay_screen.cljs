@@ -6,10 +6,10 @@
             [tetris.core.ruleset.modern :refer [make-modern-ruleset]]
             [tetris.core.tick :as tick]
             [tetris.input.keyboard :as keyboard]
+            [tetris.ui.menu :as menu]
+            [tetris.ui.menu-overlay :refer [menu-overlay]]
             [tetris.scenes.render.pixi-app :as app]
             [tetris.scenes.replay :as replay]
-            [tetris.screens.menu.core :as menu]
-            [tetris.screens.menu.menu-overlay :refer [menu-overlay]]
             [tetris.screens.screen-navigator :as screen-navigator]))
 
 (defstyles gameplay-menu-class []
@@ -51,7 +51,7 @@
         (menu/item :continue-replay nil 2)
         (menu/item :exit-replay nil 3)]
        :default-hover :exit-replay
-       :on-enter
+       :on-select
        (fn [item]
          (case (:id item)
            :continue-replay (do (swap! state assoc :game-status :playing)

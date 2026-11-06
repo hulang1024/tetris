@@ -5,10 +5,10 @@
     [reagent.core :as r]
     [tetris.audio :as audio]
     [tetris.online.api :as api]
+    [tetris.ui.menu :as menu]
+    [tetris.ui.menu-overlay :refer [menu-overlay]]
     [tetris.screens.controls-options-screen :as controls-options-screen]
     [tetris.screens.gameplay-options-screen :as gameplay-options-screen]
-    [tetris.screens.menu.core :as menu]
-    [tetris.screens.menu.menu-overlay :refer [menu-overlay]]
     [tetris.screens.multiplayer.multiplayer-ready-screen :as multiplayer-ready-screen]
     [tetris.screens.multiplayer.room-create :refer [room-create-dialog]]
     [tetris.screens.multiplayer.room-join :refer [room-join-dialog]]
@@ -58,18 +58,20 @@
                              (multiplayer-ready-screen/make {:room room :users users}))))])
    [menu-overlay
     {:state (:menu @state)
-     :on-enter (fn [{:keys [id parent] screen-maker :data}]
-                 (when (contains? #{:marathon :classic :40L} id)
-                   (audio/play :gameplay))
-                 (cond
-                   (and (= parent :multiplayer) (= (api/get-state) :offline))
-                   (swap! state assoc :login-opened true)
+     :on-select (fn [{:keys [id parent] screen-maker :data}]
+                  (if (contains? #{:marathon :classic :40L} id)
+                    (audio/play :menu-gameplay-select)
+                    (when (not (menu/menu? (:menu @state) id)) 
+                      (audio/play :menu-select)))
+                  (cond
+                    (and (= parent :multiplayer) (= (api/get-state) :offline))
+                    (swap! state assoc :login-opened true)
 
-                   (= id :quick-join-room) (join-room nil true)
-                   (= id :join-room) (swap! state assoc :room-join-opened true)
-                   (= id :create-room) (swap! state assoc :room-create-opened true)
+                    (= id :quick-join-room) (join-room nil true)
+                    (= id :join-room) (swap! state assoc :room-join-opened true)
+                    (= id :create-room) (swap! state assoc :room-create-opened true)
 
-                   :else (when screen-maker (screen-navigator/push-screen! (screen-maker)))))
+                    :else (when screen-maker (screen-navigator/push-screen! (screen-maker)))))
      :menu-item-class menu-item-class
      :menu-item-hover-class menu-item-hover-class}]
    (tip-buttons-overlay)])

@@ -47,12 +47,10 @@
   (load-screen! screen #(swap! state push-screen %)))
 
 (defn pop-screen! []
-  (tap> (:stack @state))
   (when (not (empty? (:stack (pop-screen @state))))
     (trigger-callback (active-screen) :on-exiting)
     (swap! state pop-screen)
-    (trigger-callback (active-screen) :on-resuming))
-  (audio/play :screen-back))
+    (trigger-callback (active-screen) :on-resuming)))
 
 (defn replace-screen!
   {:malli/schema [:=> [:cat Screen] :any]}
@@ -64,5 +62,6 @@
   (when-let [screen (active-screen)]
     (let [handled? (trigger-callback screen :on-keydown event)]
       (when (and (not handled?) (= (.-code event) "Escape"))
+        (audio/play :screen-back)
         (pop-screen!)))))
 

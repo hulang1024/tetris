@@ -1,4 +1,4 @@
-(ns tetris.screens.menu.core)
+(ns tetris.ui.menu)
 
 (defn item
   ([id parent order] (item id parent order nil))
@@ -53,7 +53,7 @@
     (assoc state :hover (:id (first items)))
     state))
 
-(defn enter-hover-menu [state]
+(defn select-hover-menu [state]
   (-> (assoc state :active (:hover state))
       (hover-first)))
 

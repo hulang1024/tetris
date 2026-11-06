@@ -1,10 +1,9 @@
 (ns tetris.screens.multiplayer.start-button
-  (:require ["@base-ui/react/button" :refer [Button]]
-            [tetris.i18n.core :as i18n]
+  (:require [tetris.i18n.core :as i18n]
             [tetris.screens.multiplayer.multiplayer-play-screen :as multiplayer-play-screen]
             [tetris.screens.multiplayer.room-manager :as room-manager]
             [tetris.screens.screen-navigator :as screen-navigator]
-            [tetris.screens.styles.button :as styles.button]))
+            [tetris.ui.button :refer [button]]))
 
 (defn- ^:async handle-start [button-command]
   (case button-command
@@ -28,11 +27,8 @@
                              (< readied-count joined-count) :force-start-game)
                            :unready)
                          :ready)]
-    [:> Button {:class (styles.button/overlay-button
-                         {:bg-color (if (= button-command :start-game)
-                                      :success
-                                      :primary)
-                          :full? false})
-                :style {:margin-left "1rem"}
-                :on-click #(handle-start button-command)}
-     (i18n/text [:multiplayer button-command])]))
+    (button {:bg-color (if (= button-command :start-game) :success :primary)
+             :full? false
+             :style {:margin-left "1rem"}
+             :on-click #(handle-start button-command)}
+            (i18n/text [:multiplayer button-command]))))

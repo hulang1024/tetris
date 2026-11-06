@@ -30,7 +30,8 @@
       (swap! state (fn [state]
                      (-> (assoc state :room room)
                          (update :users conj user))))
-      (on-player-joined (:room @state) (player-info @state player))))
+      (on-player-joined (:room @state) (player-info @state player)))
+    true)
 
   (ws-client/subscribe!
     :player-left

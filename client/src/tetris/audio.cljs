@@ -6,10 +6,14 @@
 (defn sound [id] (id @cached-sounds))
 
 (defn play [id]
-  (.play (sound (keyword id))))
+  (when-let [s (sound (keyword id))]
+    (.play s)))
 
 (defn- log [s]
   (tap> (str "aduio - " s)))
+
+(defn filename->id [filename]
+  (keyword (.substr filename 0 (- (.-length filename) 4))))
 
 (defn- effect-list []
   (for [name (into ["rotate" "land" "hard-drop" "lock" "hold" "fail"]
@@ -25,13 +29,14 @@
     [id src]))
 
 (defn- ui-list []
-  (for [name ["menu-hover"
-              "menu-enter"
-              "menu-back"
-              "gameplay"
-              "screen-back"]
-        :let [id (keyword name)
-              src (str "assets/ui/" name ".mp3")]]
+  (for [filename ["menu-hover.wav"
+                  "menu-select.wav"
+                  "menu-back.wav"
+                  "menu-gameplay-select.wav"
+                  "screen-back.mp3"
+                  "button-click.mp3"]
+        :let [id (filename->id filename)
+              src (str "assets/ui/" filename)]]
     [id src]))
 
 (defn- multiplayer-list []
