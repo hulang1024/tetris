@@ -16,7 +16,7 @@
         event-type (keyword (:type event))]
     (doseq [[_k handler]
             (get-in @state [:event-handlers event-type])]
-      (handler event))))
+      (handler (:data event)))))
 
 (defn connect! []
   (let [ws (js/WebSocket. (str "ws://" js/location.host "/api/ws"))]

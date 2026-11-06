@@ -17,10 +17,9 @@
 (defn start-button [local-user room players]
   (let [me (first (filter #(= (:id %) (:id local-user)) players))
         host? (= (:id me) (:host room))
-        readied? (= (:state me) "readied")
-        joined-count (count (filter some? players))
-        readied-count (count (filter #(= (:state %) "readied") players))
+        readied? (= (:state me) :readied)
         players-min (:players-min room)
+        {:keys [joined-count readied-count]} (room-manager/room-stats room)
         button-command (if readied?
                          (if host?
                            (cond

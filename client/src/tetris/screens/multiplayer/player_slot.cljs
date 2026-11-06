@@ -21,7 +21,7 @@
 (defn player-slot [slot room player]
   (let [empty-slot? (nil? player)
         host? (= (:id player) (:host room))
-        readied? (= (:state player) "readied")]
+        readied? (= (:state player) :readied)]
     [:div {:key slot
            :class (player-slot-class empty-slot? readied?)}
      (when host?

@@ -18,16 +18,18 @@
     state
     {:on-player-joined #(audio/play :multiplayer/player-joined)
      :on-player-left #(audio/play :multiplayer/player-left)
-     :on-player-ready (fn [me? ready? all-readied?]
-                        (if all-readied?
-                          (audio/play :multiplayer/player-ready-all)
-                          (when me?
-                            (audio/play (if ready?
-                                          :multiplayer/player-ready
-                                          :multiplayer/player-unready)))))}))
+     :on-player-ready (fn [room player]
+                        (let [ready? (= (:state player) :readied)]
+                          (if (:all-readied? (room-manager/room-stats room))
+                            (audio/play :multiplayer/player-ready-all)
+                            (when (= (:id player) (:id (api/local-user)))
+                              (audio/play (if ready?
+                                            :multiplayer/player-ready
+                                            :multiplayer/player-unready))))))}))
 
 (defn- build [{:keys [state]}]
-  (let [{:keys [room players]} @state]
+  (let [{:keys [room]} @state
+        players (room-manager/slot-players @state)]
     [:div
      (player-slots room players)
      [:div {:style {:margin-top "2rem"}}
@@ -40,6 +42,8 @@
   {:name :multiplayer-ready
    :build build
    :on-entering on-entering
-   :on-exiting room-manager/exit  
+   :on-exiting (fn []
+                 (room-manager/exit)
+                 (audio/play :multiplayer/player-left))  
    :state (r/atom (room-manager/make room users))})
 

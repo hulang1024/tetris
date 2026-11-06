@@ -3,41 +3,46 @@
     [tetris.online.api :as api]
     [tetris.online.ws-client :as ws-client]))
 
-(defn- get-player-info [player users]
-  (merge player (first (filter #(= (:id %) (:id player)) users))))
+(defn- player-info [{:keys [users]} player]
+  (when player
+    (let [user (first (filter #(= (:id %) (:id player)) users))]
+      (merge user (update player :state keyword)))))
 
-(defn make [room users]
-  {:room (dissoc room :players)
-   :players (mapv (fn [slot]
-                    (let [player (first (filter #(= (:slot %) slot) (:players room)))]
-                      (get-player-info player users)))
-                  (range (:players-max room)))})
+(defn slot-players [{:keys [room] :as manager}]
+  (mapv (fn [slot]
+          (let [player (first (filter #(= (:slot %) slot) (:players room)))]
+            (player-info manager player)))
+        (range (:players-max room))))
+
+(defn room-stats [room]
+  (let [joined-count (count (filter some? (:players room)))
+        readied-count (count (filter #(= (keyword (:state %)) :readied) (:players room)))]
+    {:joined-count joined-count
+     :readied-count readied-count
+     :all-readied? (= joined-count readied-count)}))
+
+(defn make [room users] {:room room :users users})
 
 (defn listen-events [state {:keys [on-player-joined on-player-left on-player-ready]}]
   (ws-client/subscribe!
     :player-joined
-    (fn [{{:keys [player user]} :data}]
-      (swap! state assoc-in [:players (:slot player)] (get-player-info player [user]))
-      (on-player-joined)))
+    (fn [{:keys [room player user]}]
+      (swap! state (fn [state]
+                     (-> (assoc state :room room)
+                         (update :users conj user))))
+      (on-player-joined (:room @state) (player-info @state player))))
 
   (ws-client/subscribe!
     :player-left
-    (fn [{{:keys [room player]} :data}]
-      (swap! state (fn [state]
-                     (-> (assoc-in state [:players (:slot player)] nil)
-                         (assoc-in [:room :host] (:host room)))))
-      (on-player-left)))
+    (fn [{:keys [room player]}]
+      (swap! state assoc :room room)
+      (on-player-left (:room @state) (player-info @state player))))
 
   (ws-client/subscribe!
     :player-ready
-    (fn [{{:keys [room player]} :data}]
-      (let [ready? (= (:state player) "readied")
-            me? (= (:id player) (:id (api/local-user)))
-            joined-count (count (filter some? (:players room)))
-            readied-count (count (filter #(= (:state %) "readied") (:players room)))
-            all-readied? (= joined-count readied-count)]
-        (swap! state assoc-in [:players (:slot player) :state] (:state player))
-        (on-player-ready me? ready? all-readied?))))
+    (fn [{:keys [room player]}]
+      (swap! state assoc :room room)
+      (on-player-ready (:room @state) (player-info @state player))))
   state)
 
 (defn leave-room []
