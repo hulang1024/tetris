@@ -9,7 +9,7 @@
     [tetris.screens.multiplayer.player-slot :refer [player-slots]]
     [tetris.screens.multiplayer.room-manager :as room-manager]
     [tetris.screens.multiplayer.start-button :refer [start-button]]
-    [tetris.screens.screen-stack :as screen-stack]
+    [tetris.screens.screen-navigator :as screen-navigator]
     [tetris.screens.styles.button :as styles.button]))
 
 (defn- on-entering [{:keys [state]}]
@@ -32,7 +32,7 @@
      (player-slots room players)
      [:div {:style {:margin-top "2rem"}}
       [:> Button {:class (styles.button/overlay-button {:bg-color :danger :full? false})
-                  :on-click #(screen-stack/pop-screen!)}
+                  :on-click #(screen-navigator/pop-screen!)}
        (i18n/text [:multiplayer :leave])]
       (start-button (api/local-user) room players)]]))
 

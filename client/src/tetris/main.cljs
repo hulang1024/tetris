@@ -5,7 +5,7 @@
     [tetris.online.api :as api]
     [tetris.screens.main-menu-screen :as main-menu-screen]
     [tetris.screens.screen-container :as screen-container]
-    [tetris.screens.screen-stack :as screen-stack]
+    [tetris.screens.screen-navigator :as screen-navigator]
     [tetris.screens.styles.global :as styles]))
 
 (defn ^:async init []
@@ -14,7 +14,7 @@
   (styles/load-global)
   (await (audio/load-sounds :ui))
   (screen-container/load)
-  (screen-stack/push-screen! (main-menu-screen/make))
+  (screen-navigator/push-screen! (main-menu-screen/make))
 
   (api/load-session-user!))
 

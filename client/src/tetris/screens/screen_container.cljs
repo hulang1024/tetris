@@ -3,7 +3,7 @@
   (:require
     [cljss.core :as css :refer-macros [defstyles]]
     [reagent.dom.client :as rd]
-    [tetris.screens.screen-stack :as screen-stack]))
+    [tetris.screens.screen-navigator :as screen-navigator]))
 
 (defonce ^:private root
   (delay (rd/create-root (.getElementById js/document "app"))))
@@ -29,11 +29,11 @@
             [{:key key :class class-name} props children]))))
 
 (defn render-screen []
-  (when-let [screen (screen-stack/active-screen)]
+  (when-let [screen (screen-navigator/active-screen)]
     (when-let [view ((:build screen) screen)]
       (add-class-and-key view (screen-class) (name (:name screen))))))
 
 (defn load []
-  (.removeEventListener js/window "keydown" screen-stack/on-keydown)
-  (.addEventListener js/window "keydown" screen-stack/on-keydown)
+  (.removeEventListener js/window "keydown" screen-navigator/on-keydown)
+  (.addEventListener js/window "keydown" screen-navigator/on-keydown)
   (rd/render @root [render-screen]))

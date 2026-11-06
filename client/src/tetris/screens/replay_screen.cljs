@@ -10,26 +10,7 @@
             [tetris.scenes.replay :as replay]
             [tetris.screens.menu.core :as menu]
             [tetris.screens.menu.menu-overlay :refer [menu-overlay]]
-            [tetris.screens.screen-stack :as screen-stack]))
-
-(def pixi-app (atom nil))
-
-(defn- destroy-scene []
-  (when @pixi-app
-    (.destroy @pixi-app #js {:removeView true})
-    (reset! pixi-app nil)))
-
-(defn- ^:async load-scene [{:keys [mode seed options replay-events]}]
-  (destroy-scene)
-  (keyboard/init)
-  (reset! pixi-app (await (app/init)))
-  (.appendChild js/document.body (.-canvas @pixi-app))
-  (let [game-state (tick/initial-game 
-                     (merge (case mode
-                              :marathon (make-modern-ruleset seed 1)
-                              :classic (make-classic-ruleset seed 0))
-                            options))]
-    (await (replay/start @pixi-app game-state replay-events))))
+            [tetris.screens.screen-navigator :as screen-navigator]))
 
 (defstyles gameplay-menu-class []
   {:background "rgba(0, 0, 0, 0.6)"
@@ -41,16 +22,29 @@
                  :font-size 24}}
    "加载中..."])
 
+(defn- ^:async load-scene [state]
+  (let [{:keys [mode seed options replay-events]} (:replay @state)]
+    (keyboard/init)
+    (swap! state assoc :pixi-app (await (app/init)))
+    (.appendChild js/document.body (.-canvas (:pixi-app @state)))
+    (let [game-state (tick/initial-game 
+                       (merge (case mode
+                                :marathon (make-modern-ruleset seed 1)
+                                :classic (make-classic-ruleset seed 0))
+                              options))]
+      (await (replay/start (:pixi-app @state) game-state replay-events)))))
+
 (declare make)
 
-(defn- build [{this :state}]
+(defn- build [{:keys [state]}]
   [:div
    [:div {:style {:position "absolute"
-                  :top "1rem"}}
-    (if (= (:game-status @this) :ended) "回放结束" "回放中")]
+                  :top "1rem"
+                  :color "#fff"}}
+    (if (= (:game-status @state) :ended) "回放结束" "回放中")]
    (cond
-     (:loading? @this) [loading-overlay]
-     (contains? #{:pause :game-over :ended} (:game-status @this))
+     (:loading? @state) [loading-overlay]
+     (contains? #{:pause :game-over :ended} (:game-status @state))
      [menu-overlay
       {:menu-items
        [(menu/item :start-over nil 1)
@@ -60,21 +54,21 @@
        :on-enter
        (fn [item]
          (case (:id item)
-           :continue-replay (do (swap! this assoc :game-status :playing)
-                                (swap! (:scene-state @this) assoc :status :playing))
-           :start-over (screen-stack/replace-screen!
-                         (make (select-keys (:replay @this) [:mode :seed :replay-events])))
-           :exit-replay (screen-stack/pop-screen!)
+           :continue-replay (do (swap! state assoc :game-status :playing)
+                                (swap! (:scene-state @state) assoc :status :playing))
+           :start-over (screen-navigator/replace-screen!
+                         (make (select-keys (:replay @state) [:mode :seed :replay-events])))
+           :exit-replay (screen-navigator/pop-screen!)
            nil))
        :menu-class gameplay-menu-class}]
      :else nil)])
 
-(defn- on-entering [{this :state}] 
-  (when (contains? #{:marathon :classic} (get-in @this [:replay :mode]))
-    (let [scene-state-promise (load-scene (:replay @this))]
+(defn- on-entering [{:keys [state]}] 
+  (when (contains? #{:marathon :classic} (get-in @state [:replay :mode]))
+    (let [scene-state-promise (load-scene state)]
       (.then scene-state-promise
              (fn [scene-state]
-               (swap! this assoc
+               (swap! state assoc
                       :loading? false
                       :scene-state scene-state)
                (add-watch
@@ -85,25 +79,24 @@
                          old (select-keys old listen-keys)
                          new (select-keys new listen-keys)]
                      (when (not= old new)
-                       (swap! this
-                              (fn [screen]
-                                (assoc screen
-                                       :game-status (:status new)))))))))))))
+                       (swap! state assoc :game-status (:status new)))))))))))
 
-(defn- on-exiting []
-  (destroy-scene))
+(defn- on-exiting [{:keys [state]}]
+  (when (:pixi-app @state)
+    (.destroy (:pixi-app @state) #js {:removeView true})
+    (swap! state assoc :pixi-app nil)))
 
-(defn- on-keydown [{this :state} event]
+(defn- on-keydown [{:keys [state]} event]
   (when (= (.-code event) "Escape")
-    (if (= (:status @(:scene-state @this)) :game-over)
-      (screen-stack/pop-screen!)
-      (let [{:keys [game-status]} @this
+    (if (= (:status @(:scene-state @state)) :game-over)
+      (screen-navigator/pop-screen!)
+      (let [{:keys [game-status]} @state
             new-game-status (case game-status
                               :playing :pause
                               :pause :playing
                               game-status)]
-        (swap! this assoc :game-status new-game-status)
-        (swap! (:scene-state @this) assoc :status new-game-status))))
+        (swap! state assoc :game-status new-game-status)
+        (swap! (:scene-state @state) assoc :status new-game-status))))
   true)
 
 (defn make [replay]
@@ -112,7 +105,8 @@
    :on-entering on-entering
    :on-exiting on-exiting
    :on-keydown on-keydown
-   :state (r/atom {:loading? true
+   :state (r/atom {:pixi-app nil
+                   :loading? true
                    :replay replay
                    :scene-state nil
                    :game-status :playing})})

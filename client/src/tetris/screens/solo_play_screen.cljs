@@ -14,28 +14,8 @@
             [tetris.screens.menu.core :as menu]
             [tetris.screens.menu.menu-overlay :refer [menu-overlay]]
             [tetris.screens.replay-screen :as replay-screen]
-            [tetris.screens.screen-stack :as screen-stack]
+            [tetris.screens.screen-navigator :as screen-navigator]
             [tetris.screens.controls-options-screen :as controls-options-screen]))
-
-(def pixi-app (atom nil))
-
-(defn- destroy-scene []
-  (when @pixi-app
-    (gameplay/destroy)
-    (.destroy @pixi-app #js {:removeView true})
-    (reset! pixi-app nil)))
-
-(defn- ^:async load-scene [{:keys [mode seed options]}]
-  (destroy-scene)
-  (keyboard/init)
-  (reset! pixi-app (await (app/init)))
-  (.appendChild js/document.body (.-canvas @pixi-app))
-  (let [game-state (tick/initial-game
-                     (merge (case mode
-                              :marathon (make-modern-ruleset seed 1)
-                              :classic (make-classic-ruleset seed 0))
-                            options))]
-    (await (gameplay/start @pixi-app game-state))))
 
 (defstyles gameplay-menu-class []
   {:background "rgba(0, 0, 0, 0.6)"
@@ -53,14 +33,26 @@
                  :font-size 24}}
    "加载中..."])
 
+(defn- ^:async load-scene [state]
+  (let [{{:keys [mode seed options]} :settings} @state]
+    (keyboard/init)
+    (swap! state assoc :pixi-app (await (app/init)))
+    (.appendChild js/document.body (.-canvas (:pixi-app @state)))
+    (let [game-state (tick/initial-game
+                       (merge (case mode
+                                :marathon (make-modern-ruleset seed 1)
+                                :classic (make-classic-ruleset seed 0))
+                              options))]
+      (await (gameplay/start (:pixi-app @state) game-state)))))
+
 (declare make)
 
-(defn- build [{this :state}]
+(defn- build [{:keys [state]}]
   [:div
    (cond
-     (:loading? @this) [loading-overlay]
+     (:loading? @state) [loading-overlay]
 
-     (contains? #{:pause :game-over} (:game-status @this))
+     (contains? #{:pause :game-over} (:game-status @state))
      [menu-overlay
       {:menu-items
        (->> [(menu/item :start-over nil 1)
@@ -68,7 +60,7 @@
              (menu/item :custom-controls nil 3)
              (menu/item :replay nil 4)
              (menu/item :exit-game nil 5)]
-            (filterv (if (= (:game-status @this) :game-over)
+            (filterv (if (= (:game-status @state) :game-over)
                        #(not= (:id %) :continue-game)
                        identity)))
        :default-hover :continue-game
@@ -77,16 +69,16 @@
          (when (contains? #{:start-over} (:id item))
            (audio/play :gameplay))
          (case (:id item)
-           :continue-game (do (swap! this assoc :game-status :playing)
-                              (swap! (:scene-state @this) assoc :status :playing))
-           :start-over (screen-stack/replace-screen!
-                         (make (select-keys (:settings @this) [:mode])))
-           :custom-controls (screen-stack/push-screen! (controls-options-screen/make))
-           :exit-game (screen-stack/pop-screen!)
-           :replay (screen-stack/push-screen!
+           :continue-game (do (swap! state assoc :game-status :playing)
+                              (swap! (:scene-state @state) assoc :status :playing))
+           :start-over (screen-navigator/replace-screen!
+                         (make (select-keys (:settings @state) [:mode])))
+           :custom-controls (screen-navigator/push-screen! (controls-options-screen/make))
+           :exit-game (screen-navigator/pop-screen!)
+           :replay (screen-navigator/push-screen!
                      (replay-screen/make
-                       (assoc (:settings @this)
-                              :replay-events (:replay-recorder @(:scene-state @this)))))
+                       (assoc (:settings @state)
+                              :replay-events (:replay-recorder @(:scene-state @state)))))
            nil))
        :menu-class gameplay-menu-class
        :menu-item-class menu-item-class
@@ -94,12 +86,12 @@
 
      :else nil)])
 
-(defn- on-entering [{this :state}] 
-  (when (contains? #{:marathon :classic} (get-in @this [:settings :mode]))
-    (let [scene-state-promise (load-scene (:settings @this))]
+(defn- on-entering [{:keys [state]}] 
+  (when (contains? #{:marathon :classic} (get-in @state [:settings :mode]))
+    (let [scene-state-promise (load-scene state)]
       (.then scene-state-promise
              (fn [scene-state]
-               (swap! this assoc
+               (swap! state assoc
                       :loading? false
                       :scene-state scene-state)
                (add-watch
@@ -110,30 +102,31 @@
                          old (select-keys old listen-keys)
                          new (select-keys new listen-keys)]
                      (when (not= old new)
-                       (swap! this
-                              (fn [screen]
-                                (assoc screen
-                                       :game-status (:status new)))))))))))))
+                       (swap! state assoc :game-status (:status new)))))))))))
 
-(defn- on-suspending []
-  (gstyle/setStyle (.-canvas @pixi-app) #js {:display "none"})) 
+(defn- on-suspending [{:keys [state]}]
+  (gstyle/setStyle (.-canvas (:pixi-app @state)) #js {:display "none"})) 
 
-(defn- on-resuming []
-  (gstyle/setStyle (.-canvas @pixi-app) #js {:display "block"})) 
+(defn- on-resuming [{:keys [state]}]
+  (gstyle/setStyle (.-canvas (:pixi-app @state)) #js {:display "block"})) 
 
-(defn- on-exiting []
-  (destroy-scene))
-(defn- on-keydown [{this :state} event]
+(defn- on-exiting [{:keys [state]}]
+  (when (:pixi-app @state)
+    (gameplay/destroy)
+    (.destroy (:pixi-app @state) #js {:removeView true})
+    (swap! state assoc :pixi-app nil)))
+
+(defn- on-keydown [{:keys [state]} event]
   (when (= (.-code event) "Escape")
-    (if (= (:status @(:scene-state @this)) :game-over)
-      (screen-stack/pop-screen!)
-      (let [{:keys [game-status]} @this
+    (if (= (:status @(:scene-state @state)) :game-over)
+      (screen-navigator/pop-screen!)
+      (let [{:keys [game-status]} @state
             new-game-status (case game-status
                               :playing :pause
                               :pause :playing
                               game-status)]
-        (swap! this assoc :game-status new-game-status)
-        (swap! (:scene-state @this) assoc :status new-game-status))))
+        (swap! state assoc :game-status new-game-status)
+        (swap! (:scene-state @state) assoc :status new-game-status))))
   true)
 
 (defn make [mode]
@@ -144,7 +137,8 @@
    :on-resuming on-resuming
    :on-exiting on-exiting
    :on-keydown on-keydown
-   :state (r/atom {:loading? true
+   :state (r/atom {:pixi-app nil
+                   :loading? true
                    :settings {:mode mode
                               :seed (+ (js/Date.now))
                               :options (if (not= mode :classic)
