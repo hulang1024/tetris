@@ -5,6 +5,7 @@
     [clojure.string :as str]
     [reagent.core :as r]
     [tetris.i18n.core :as i18n]
+    [tetris.options :as options]
     [tetris.options-store :as options-store]
     [tetris.screens.tip-buttons :refer [tip-buttons-overlay]]))
 
@@ -99,8 +100,8 @@
   (swap! state assoc :controls-unchanged controls))
 
 (defn- reset-controls! [state]
-  (let [controls (options-store/slotify-controls
-                   (:controls options-store/default-options))]
+  (let [controls (options/slotify-controls
+                   (:controls options/default-options))]
     (swap! state assoc :controls controls)
     (save-controls! state controls)))
 
@@ -181,7 +182,7 @@
       :else false)))
 
 (defn make []
-  (let [controls (options-store/slotify-controls
+  (let [controls (options/slotify-controls
                    (options-store/get-options :controls))]
     {:name :controls-options
      :build build

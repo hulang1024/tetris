@@ -1,4 +1,4 @@
-(ns tetris.scenes.gameplay
+(ns tetris.scenes.solo
   (:require [tetris.assets :as assets]
             [tetris.core.game :as game]
             [tetris.core.replay :as replay]

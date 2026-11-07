@@ -1,8 +1,6 @@
 (ns tetris.screens.multiplayer.start-button
   (:require [tetris.i18n.core :as i18n]
-            [tetris.screens.multiplayer.multiplayer-play-screen :as multiplayer-play-screen]
             [tetris.screens.multiplayer.room-manager :as room-manager]
-            [tetris.screens.screen-navigator :as screen-navigator]
             [tetris.ui.button :refer [button]]))
 
 (defn- ^:async handle-start [button-command]
@@ -10,8 +8,8 @@
     :ready (room-manager/toggle-ready)
     :unready (room-manager/toggle-ready)
     :start-game (let [resp (await (room-manager/enter-game))]
-                  (when (= (:code resp) :ok)
-                    (screen-navigator/replace-screen! (multiplayer-play-screen/make))))))
+                  (when (not= (:code resp) :ok)
+                    (js/alert "开始失败")))))
 
 (defn start-button [local-user room players]
   (let [me (first (filter #(= (:id %) (:id local-user)) players))
@@ -30,5 +28,6 @@
     (button {:bg-color (if (= button-command :start-game) :success :primary)
              :full? false
              :style {:margin-left "1rem"}
+             :disabled (= (:state room) :inprogress)
              :on-click #(handle-start button-command)}
             (i18n/text [:multiplayer button-command]))))

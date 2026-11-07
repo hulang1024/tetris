@@ -9,6 +9,7 @@
     [tetris.screens.multiplayer.player-slot :refer [player-slots]]
     [tetris.screens.multiplayer.room-manager :as room-manager]
     [tetris.screens.multiplayer.start-button :refer [start-button]]
+    [tetris.screens.multiplayer.multiplayer-play-screen :as multiplayer-play-screen]
     [tetris.screens.screen-navigator :as screen-navigator]
     [tetris.ui.button :refer [button]]))
 
@@ -46,7 +47,10 @@
                             (when (= (:id player) (:id (api/local-user)))
                               (audio/play (if ready?
                                             :multiplayer/player-ready
-                                            :multiplayer/player-unready))))))})
+                                            :multiplayer/player-unready))))))
+     :on-game-entered (fn [_room]
+                        (screen-navigator/push-screen!
+                          (multiplayer-play-screen/make :marathon)))})
   (audio/load-sounds :multiplayer)
   (when (= (count (get-in @state [:room :players])) 1)
     (audio/play :multiplayer/player-joined)))

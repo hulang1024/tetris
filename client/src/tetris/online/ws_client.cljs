@@ -8,7 +8,8 @@
            :event-handlers {:player-joined {}
                             :player-left {}
                             :player-ready {}
-                            :player-slot-changed {}}}))
+                            :player-slot-changed {}
+                            :game-started {}}}))
 
 (defn- dispatch-event! [event]
   (let [handlers (get-in @state [:event-handlers (:type event)])]
@@ -47,6 +48,7 @@
   ([event-type handler take-queue?]
    (subscribe! event-type event-type handler take-queue?))
   ([event-type handler-key handler take-queue?]
+   {:pre [(keyword? event-type) (fn? handler)]}
    (swap! state assoc-in [:event-handlers event-type handler-key] handler)
    (when take-queue?
      (let [events (filter #(= (:type %) event-type) (:event-queue @state))]

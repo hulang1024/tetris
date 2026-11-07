@@ -12,7 +12,10 @@
   (vec (vals (:rooms @manager))))
 
 (defn get-match-room [manager _uid]
-  (first (vals (:rooms @manager))))
+  (first (filter (fn [room]
+                   (and (= (:state room) :ready)room
+                        (< (count (:players room)) (:players-max room))))
+                 (vals (:rooms @manager)))))
 
 (defn get-room [manager room-id]
   (get (:rooms @manager) room-id))

@@ -22,7 +22,9 @@
 (defn button [{:keys [on-click] :as props} children]
   [:> Button {:class (button-class (select-keys props [:bg-color :full?]))
               :style (:style props)
+              :disabled (:disabled props)
               :on-click (fn []
-                          (audio/play :button-click)
-                          (on-click))}
+                          (when-not (:disabled props)
+                            (audio/play :button-click)
+                            (on-click)))}
    children])

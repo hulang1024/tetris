@@ -11,7 +11,7 @@
             [tetris.options-store :as options-store]
             [tetris.ui.menu :as menu]
             [tetris.ui.menu-overlay :refer [menu-overlay]]
-            [tetris.scenes.gameplay :as gameplay]
+            [tetris.scenes.solo :as solo]
             [tetris.scenes.render.pixi-app :as app]
             [tetris.screens.replay-screen :as replay-screen]
             [tetris.screens.screen-navigator :as screen-navigator]
@@ -43,7 +43,7 @@
                                 :marathon (make-modern-ruleset seed 1)
                                 :classic (make-classic-ruleset seed 0))
                               options))]
-      (await (gameplay/start (:pixi-app @state) game-state)))))
+      (await (solo/start (:pixi-app @state) game-state)))))
 
 (declare make)
 
@@ -112,7 +112,7 @@
 
 (defn- on-exiting [{:keys [state]}]
   (when (:pixi-app @state)
-    (gameplay/destroy)
+    (solo/destroy)
     (.destroy (:pixi-app @state) #js {:removeView true})
     (swap! state assoc :pixi-app nil)))
 

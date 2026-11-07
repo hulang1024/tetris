@@ -23,31 +23,39 @@
 
 (defn make [room users] {:room room :users users})
 
-(defn listen-events [state {:keys [on-player-joined on-player-left on-player-ready]}]
+(defn- update-room! [state room]
+  (swap! state assoc :room (update room :state keyword)))
+
+(defn listen-events [state {:keys [on-player-joined on-player-left on-player-ready on-game-entered]}]
   (ws-client/subscribe!
     :player-joined
     (fn [{:keys [room player user]}]
-      (swap! state (fn [state]
-                     (-> (assoc state :room room)
-                         (update :users conj user))))
+      (update-room! state room)
+      (swap! state update :users conj user)
       (on-player-joined (:room @state) (player-info @state player)))
     true)
 
   (ws-client/subscribe!
     :player-left
     (fn [{:keys [room player]}]
-      (swap! state assoc :room room)
+      (update-room! state room)
       (on-player-left (:room @state) (player-info @state player))))
 
   (ws-client/subscribe!
     :player-ready
     (fn [{:keys [room player]}]
-      (swap! state assoc :room room)
+      (update-room! state room)
       (on-player-ready (:room @state) (player-info @state player))))
 
   (ws-client/subscribe!
     :player-slot-changed
-    (fn [{:keys [room]}] (swap! state assoc :room room)))
+    (fn [{:keys [room]}] (update-room! state room)))
+
+  (ws-client/subscribe!
+    :game-entered
+    (fn [{:keys [room]}]
+      (update-room! state room)
+      (on-game-entered (:room @state))))
   state)
 
 (defn leave-room []
@@ -70,7 +78,8 @@
             (if quick-join? {:quick_join true} {:room_id room-id})))
 
 (defn exit []
-  (doseq [event-type [:player-joined :player-left :player-ready]]
+  (doseq [event-type [:player-joined :player-left :player-ready
+                      :player-slot-changed :game-entered]]
     (ws-client/unsubscribe! event-type))
   (leave-room))
 
