@@ -38,12 +38,12 @@
                  (when-let [msg (json/parse-string msg-json true)]
                    (when (= (:type msg) "stat-online-users")
                      (ws/send-text! channel (str (count @ws-channels))))))
-     :on-brinary (fn [_channel {:keys [room-manager] {:keys [uid]} :session} byte-buffer]
-                   (let [room (room-manager/get-joined-room room-manager uid)]
-                     (when room
-                       (broadcast-binary!
-                         (remove #(= % uid) (room/player-uids room))
-                         (.array byte-buffer)))))
+     :on-binary (fn [_channel {:keys [room-manager] {:keys [uid]} :session} byte-buffer]
+                  (let [room (room-manager/get-joined-room room-manager uid)]
+                    (when room
+                      (broadcast-binary!
+                        (remove #(= % uid) (room/player-uids room))
+                        (.array byte-buffer)))))
      :on-close (fn [_channel {:keys [room-manager] {:keys [uid]} :session} _reason]                    
                  (del! uid)
                  (when-let [joined-room (room-manager/get-joined-room room-manager uid)]

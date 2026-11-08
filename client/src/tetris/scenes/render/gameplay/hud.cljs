@@ -91,11 +91,11 @@
     (set! (.-x container) (get-in layout [:next :x]))
     container))
 
-(defn create [layout options]
+(defn create [layout {:keys [preview-count]}]
   (let [hud (pixi/Container. #js {:label "hud"})]
     (.addChild hud
                (hold (:hold layout))
-               (preview (:next layout) (:preview-count options))
+               (preview (:next layout) preview-count)
                (left-stats-view layout)
                (right-stats-view layout))
     hud))

@@ -70,6 +70,9 @@
 (defn enter-game []
   (api/post "/room/enter-game"))
 
+(defn request-start-game [game-config]
+  (api/post "/room/request-start-game" game-config))
+
 (defn create-room [room]
   (api/post "/room/create-room" room))
 

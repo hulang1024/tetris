@@ -4,7 +4,8 @@
 (def Player
   [:map
    [:id :int]
-   [:state [:enum :not-ready :readied :play-requested]]])
+   [:state [:enum :not-ready :readied :play-requested]]
+   [:game-config [:map]]])
 
 (def RoomId :string)
 
@@ -50,11 +51,13 @@
 (defn update-player [room uid update-fn]
   (update room :players
           (fn [players]
-            (mapv (fn [player]
-                    (if (= (:id player) uid)
-                      (update-fn player)
-                      player))
-                  players))))
+            (let [players
+                  (map (fn [player]
+                         (if (= (:id player) uid)
+                           (update-fn player)
+                           player))
+                       players)]
+              (vec (sort-by :slot players))))))
 
 (defn every-players? [room pred-state]
   (every? #(= (:state %) pred-state) (:players room)))
@@ -97,5 +100,6 @@
     (assoc room :state :inprogress)
     room))
 
-(defn request-start-game [room uid]
-  (update-player room uid #(assoc % :state :play-requested)))
+(defn request-start-game [room uid game-config]
+  (update-player room uid
+                 #(assoc % :state :play-requested :game-config game-config)))

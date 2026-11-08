@@ -13,6 +13,12 @@
     [tetris.screens.screen-navigator :as screen-navigator]
     [tetris.ui.button :refer [button]]))
 
+(defstyles screen-intro []
+  {:position "absolute"
+   :top "1rem"
+   :left "1rem"
+   :font-size "2.2rem"})
+
 (defstyles room-info-class []
   {:position "absolute"
    :top "1rem"
@@ -25,6 +31,7 @@
   (let [{:keys [room]} @state
         players (room-manager/slot-players @state)]
     [:div
+     [:div {:class (screen-intro)} "多人游戏房间"]
      [:div {:class (room-info-class)}
       [:div {:class "room-no" :title "房号"} (:id room)]
       [:div {:class "is-public"} (if (:public room) "公开" "不公开")]]
@@ -48,9 +55,9 @@
                               (audio/play (if ready?
                                             :multiplayer/player-ready
                                             :multiplayer/player-unready))))))
-     :on-game-entered (fn [_room]
+     :on-game-entered (fn [room]
                         (screen-navigator/push-screen!
-                          (multiplayer-play-screen/make :marathon)))})
+                          (multiplayer-play-screen/make room)))})
   (audio/load-sounds :multiplayer)
   (when (= (count (get-in @state [:room :players])) 1)
     (audio/play :multiplayer/player-joined)))

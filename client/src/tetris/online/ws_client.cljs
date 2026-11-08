@@ -1,5 +1,6 @@
 (ns tetris.online.ws-client
-  (:require [reagent.core :as r]))
+  (:require [reagent.core :as r]
+            [tetris.online.ws-codec :as codec]))
 
 (defonce ^:private state
   (r/atom {:state :offline
@@ -23,19 +24,14 @@
     (swap! state assoc
            :conn ws
            :state :connecting)
+    (set! (.-binaryType ws) "arraybuffer")
     (.addEventListener ws "open"
                        (fn [] (swap! state assoc :state :online)))
     (.addEventListener ws "close"
                        (fn [] (swap! state assoc :state :offline)))
     (.addEventListener ws "message"
                        (fn [event]
-                         (let [raw-data (.-data event)
-                               event (if (string? raw-data)
-                                       (-> (js->clj (js/JSON.parse raw-data)
-                                                    :keywordize-keys true)
-                                           (update :type keyword))
-                                       raw-data)]
-                           (dispatch-event! event))))))
+                         (dispatch-event! (codec/->server-event (.-data event)))))))
 
 (defn on-api-state-change [api-state]
   (cond
@@ -61,3 +57,6 @@
    (unsubscribe! event-type event-type))
   ([event-type handler-key]
    (swap! state update-in [:event-handlers event-type] dissoc handler-key)))
+
+(defn broadcast-input-frames! [uid input-frames]
+  (.send (:conn @state) (codec/encode-input-frames uid input-frames)))

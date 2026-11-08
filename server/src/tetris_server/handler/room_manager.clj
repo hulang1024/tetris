@@ -61,9 +61,9 @@
       (swap! manager update :rooms put-room room)
       room)))
 
-(defn request-start-game! [manager room-id uid]
+(defn request-start-game! [manager room-id uid game-config]
   (when-let [room (get-room manager room-id)]
-    (let [room (room/request-start-game room uid)]
+    (let [room (room/request-start-game room uid game-config)]
       (swap! manager update :rooms put-room room)
       room)))
 

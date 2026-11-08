@@ -4,9 +4,12 @@
                                  soft-drop-speed]]
     [tetris.core.ruleset.pgen-hr :as pgen-hr]
     [tetris.core.ruleset.scoring-nes :as scoring-nes]
-    [tetris.core.ruleset.speedlv-nes :as speedlv-nes]))
+    [tetris.core.ruleset.speedlv-nes :as speedlv-nes]
+    [tetris.core.tick :as tick]))
 
-(defn make-classic-ruleset [seed speed-level]
+(defn make-classic-ruleset
+  {:malli/schema [:=> [:cat some? :int] tick/GameOptions]}
+  [seed speed-level]
   {:ruleset :classic
    :rotation-system :nrs-nes
    :piece-generator (pgen-hr/make seed 1 2)

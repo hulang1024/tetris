@@ -20,7 +20,13 @@
    [:fn (fn [{:keys [room-id quick-join]}] (or room-id quick-join))]])
 
 (def ChangeSlotRequest
-  [:map [:slot [:int {:min 0}]]])
+  [:map
+   [:slot [:int {:min 0}]]])
+
+(def RequestStartGameRequest
+  [:map
+   [:seed some?]
+   [:handling [:map]]])
 
 (def SearchRoomRequest [:map])
 
@@ -110,12 +116,14 @@
                 (ws/broadcast-event! (room/player-uids room) :game-entered {:room room}))
               (api-response (if started? :ok :failed))))))
 
-(defn request-start-game [{:keys [room-manager] {:keys [uid]} :session}]
+(defn request-start-game [{:keys [room-manager]
+                           game-config :json-params
+                           {:keys [uid]} :session}]
   (let [room (room-manager/get-joined-room room-manager uid)]
     (cond
       (nil? room) (api-response :not-found)
       (not= (:state room) :inprogress) (api-response :failed)
-      :else (let [room (room-manager/request-start-game! room-manager (:id room) uid)]
+      :else (let [room (room-manager/request-start-game! room-manager (:id room) uid game-config)]
               (when (room/every-players? room :play-requested)
                 (ws/broadcast-event! (room/player-uids room) :game-started {:room room}))
               (api-response :ok)))))
