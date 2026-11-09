@@ -27,6 +27,11 @@
    ".room-no" {:font-size "2rem" :user-select "text"}
    ".is-public" {:margin-top "1rem" :color "#999"}})
 
+(defn- handle-leave-room []
+  (audio/play :multiplayer/player-left)
+  (screen-navigator/pop-screen!)
+  (room-manager/leave-room))
+
 (defn- build [{:keys [state]}]
   (let [{:keys [room]} @state
         players (room-manager/slot-players @state)]
@@ -38,7 +43,7 @@
      (player-slots room players (api/local-user))
      [:div {:style {:margin-top "2rem"}}
       (button {:bg-color :danger :full? false
-               :on-click #(screen-navigator/pop-screen!)}
+               :on-click handle-leave-room}
               (i18n/text [:multiplayer :leave]))
       (start-button (api/local-user) room players)]]))
 
@@ -56,7 +61,7 @@
                                             :multiplayer/player-ready
                                             :multiplayer/player-unready))))))
      :on-game-entered (fn [room]
-                        (screen-navigator/push-screen!
+                        (screen-navigator/replace-screen!
                           (multiplayer-play-screen/make room)))})
   (audio/load-sounds :multiplayer)
   (when (= (count (get-in @state [:room :players])) 1)
@@ -66,8 +71,6 @@
   {:name :multiplayer-ready
    :build build
    :on-entering on-entering
-   :on-exiting (fn []
-                 (room-manager/exit)
-                 (audio/play :multiplayer/player-left))  
+   :on-exiting room-manager/exit  
    :state (r/atom (room-manager/make room users))})
 

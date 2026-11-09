@@ -10,14 +10,15 @@
     [tetris.scenes.render.gameplay.hud :as hud]
     [tetris.scenes.render.gameplay.tween-mgr :as tm]))
 
-(defn create [^js {:keys [preview-count piece-style]}]
+(defn create [^js {:keys [preview-count piece-style player-name]}]
   (let [layout (calc-layout preview-count)
         ^js game-view (pixi/Container.
                         #js {:label "game-view"
                              :x (/ (- v-screen-width (:width layout)) 2)
                              :y (/ (- v-screen-height (:height layout)) 2)})
         matrix (matrix/create (:matrix layout))
-        hud (hud/create layout {:preview-count preview-count})]
+        hud (hud/create layout {:preview-count preview-count
+                                :player-name player-name})]
     (.addChild game-view matrix)
     (.addChild game-view hud)
     {:layout layout

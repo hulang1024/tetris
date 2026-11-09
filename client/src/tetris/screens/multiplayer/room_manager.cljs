@@ -3,7 +3,7 @@
     [tetris.online.api :as api]
     [tetris.online.ws-client :as ws-client]))
 
-(defn- player-info [{:keys [users]} player]
+(defn player-info [player users]
   (when player
     (let [user (first (filter #(= (:id %) (:id player)) users))]
       (merge user (update player :state keyword)))))
@@ -11,7 +11,7 @@
 (defn slot-players [{:keys [room] :as manager}]
   (mapv (fn [slot]
           (let [player (first (filter #(= (:slot %) slot) (:players room)))]
-            (player-info manager player)))
+            (player-info player (:users manager))))
         (range (:players-max room))))
 
 (defn room-stats [room]
@@ -32,20 +32,20 @@
     (fn [{:keys [room player user]}]
       (update-room! state room)
       (swap! state update :users conj user)
-      (on-player-joined (:room @state) (player-info @state player)))
+      (on-player-joined (:room @state) (player-info player (:users @state))))
     true)
 
   (ws-client/subscribe!
     :player-left
     (fn [{:keys [room player]}]
       (update-room! state room)
-      (on-player-left (:room @state) (player-info @state player))))
+      (on-player-left (:room @state) (player-info player(:users @state)))))
 
   (ws-client/subscribe!
     :player-ready
     (fn [{:keys [room player]}]
       (update-room! state room)
-      (on-player-ready (:room @state) (player-info @state player))))
+      (on-player-ready (:room @state) (player-info player (:users @state)))))
 
   (ws-client/subscribe!
     :player-slot-changed
@@ -83,6 +83,5 @@
 (defn exit []
   (doseq [event-type [:player-joined :player-left :player-ready
                       :player-slot-changed :game-entered]]
-    (ws-client/unsubscribe! event-type))
-  (leave-room))
+    (ws-client/unsubscribe! event-type)))
 

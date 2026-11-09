@@ -116,7 +116,7 @@
                 (ws/broadcast-event! (room/player-uids room) :game-entered {:room room}))
               (api-response (if started? :ok :failed))))))
 
-(defn request-start-game [{:keys [room-manager]
+(defn request-start-game [{:keys [room-manager datasource]
                            game-config :json-params
                            {:keys [uid]} :session}]
   (let [room (room-manager/get-joined-room room-manager uid)]
@@ -125,5 +125,7 @@
       (not= (:state room) :inprogress) (api-response :failed)
       :else (let [room (room-manager/request-start-game! room-manager (:id room) uid game-config)]
               (when (room/every-players? room :play-requested)
-                (ws/broadcast-event! (room/player-uids room) :game-started {:room room}))
+                (ws/broadcast-event! (room/player-uids room) :game-started
+                                     {:room room
+                                      :users (user/get-user-infos datasource (room/player-uids room))}))
               (api-response :ok)))))

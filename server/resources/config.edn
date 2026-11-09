@@ -1,7 +1,7 @@
 {:server {:port 8080}
  :db {:dbtype "postgres"
-      :dbname #profile {:default "tetris-prod"
-                        :test "tetris"}
-      :username "postgres"
-      :password "dev12345"
+      :dbname #profile {:default "tetrisdb"
+                        :test "tetrisdb"}
+      :username "tetris"
+      :password "tetris2026"
       :dataSourceProperties {:socketTimeout 3000}}}

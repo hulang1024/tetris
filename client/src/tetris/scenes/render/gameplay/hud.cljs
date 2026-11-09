@@ -78,26 +78,27 @@
                              (- (get-in layout [:matrix :margin-x]) 32)))
     container))
 
-(defn right-stats-view [layout]
+(defn right-stats-view [layout player-name]
   (let [container (pixi/Container.
                     #js {:label "right"
                          :anchor #js {:x 0 :y 0}})
         anchor {:x 0 :y 0}]
     (doto container
-      (.addChild (title-view (stat-item-y 0 :t) anchor "SCORE"))
-      (.addChild (number-view (stat-item-y 0 :v) anchor "score" "0")))
+      (.addChild (title-view (stat-item-y 0 :t) anchor player-name))
+      (.addChild (title-view (stat-item-y 1 :t) anchor "SCORE"))
+      (.addChild (number-view (stat-item-y 1 :v) anchor "score" "0")))
     (set! (.-y container) (- (get-in layout [:matrix :height])
                              (.-height container)))
     (set! (.-x container) (get-in layout [:next :x]))
     container))
 
-(defn create [layout {:keys [preview-count]}]
+(defn create [layout {:keys [preview-count player-name]}]
   (let [hud (pixi/Container. #js {:label "hud"})]
     (.addChild hud
                (hold (:hold layout))
                (preview (:next layout) preview-count)
                (left-stats-view layout)
-               (right-stats-view layout))
+               (right-stats-view layout player-name))
     hud))
 
 (defn- render-hold [view data]

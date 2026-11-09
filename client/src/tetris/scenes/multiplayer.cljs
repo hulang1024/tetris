@@ -28,6 +28,7 @@
                        :classic (make-classic-ruleset (get-in player [:game-config :seed]) 0))
                      (:handling players)))]
         {:id id
+         :name (:username player)
          :game-state game-state
          :game-status :playing
          :game-view nil
@@ -96,9 +97,11 @@
 (def Player
   [:map
    [:id :int]
-   [:seed some?]
+   [:username :string]
    [:game-config
-    [:map [:handling [:or options/Handling [:map]]]]]])
+    [:map
+     [:seed some?]
+     [:handling [:or options/Handling [:map]]]]]])
 
 (def Game
   [:map
@@ -136,7 +139,8 @@
              (map-indexed vector)
              (reduce
                (fn [m [view-i player]]
-                 (let [game-view (game-view/create game)
+                 (let [game-view (game-view/create
+                                   (assoc game :player-name (:name player)))
                        {:keys [container layout]} game-view
                        total-w (* (:width layout) (count players))
                        left (/ (- v-screen-width total-w) 2)]

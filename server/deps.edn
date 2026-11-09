@@ -29,7 +29,7 @@
    :jvm-opts ["-Dio.pedestal.dev-mode=true"]}
 
   :run
-  {:exec-fn  tetris-server.web.server/start}
+  {:exec-fn  tetris-server.server/start}
 
   :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.13"}
                  slipset/deps-deploy           {:mvn/version "0.2.2"}
