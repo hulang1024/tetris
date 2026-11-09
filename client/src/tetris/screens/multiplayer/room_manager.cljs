@@ -67,8 +67,8 @@
 (defn change-slot [slot]
   (api/post "/room/change-slot" {:slot slot}))
 
-(defn enter-game []
-  (api/post "/room/enter-game"))
+(defn enter-game [force?]
+  (api/post "/room/enter-game" {:force-start force?}))
 
 (defn request-start-game [game-config]
   (api/post "/room/request-start-game" game-config))

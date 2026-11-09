@@ -3,13 +3,17 @@
             [tetris.screens.multiplayer.room-manager :as room-manager]
             [tetris.ui.button :refer [button]]))
 
-(defn- ^:async handle-start [button-command]
+(defn- ^:async start-game [force?]
+  (let [resp (await (room-manager/enter-game force?))]
+    (when (not= (:code resp) :ok)
+      (js/alert "开始失败"))))
+
+(defn- handle-start [button-command]
   (case button-command
     :ready (room-manager/toggle-ready)
     :unready (room-manager/toggle-ready)
-    :start-game (let [resp (await (room-manager/enter-game))]
-                  (when (not= (:code resp) :ok)
-                    (js/alert "开始失败")))))
+    :start-game (start-game false)
+    :force-start-game (start-game true)))
 
 (defn start-button [local-user room players]
   (let [me (first (filter #(= (:id %) (:id local-user)) players))

@@ -48,7 +48,7 @@
           (i18n/text [:login-message :failed]))))))
 
 (defn- ^:async handle-register [user-form on-success messager]
-  (let [resp (await (api/register! user-form))]
+  (let [resp (await (api/register! (select-keys user-form [:username :password])))]
     (if (= (:code resp) :ok)
       (on-success (:data resp))
       (messager
