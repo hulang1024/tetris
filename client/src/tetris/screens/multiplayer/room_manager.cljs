@@ -24,7 +24,11 @@
 (defn make [room users] {:room room :users users})
 
 (defn- update-room! [state room]
-  (swap! state assoc :room (update room :state keyword)))
+  (swap! state assoc :room
+         (-> room
+             (update :state keyword)
+             (update-in [:game-settings :mode] keyword)
+             (update-in [:game-settings :rs] keyword))))
 
 (defn listen-events [state {:keys [on-player-joined on-player-left on-player-ready on-game-entered]}]
   (ws-client/subscribe!
@@ -52,6 +56,10 @@
     (fn [{:keys [room]}] (update-room! state room)))
 
   (ws-client/subscribe!
+    :room-changed
+    (fn [{:keys [room]}] (update-room! state room)))
+
+  (ws-client/subscribe!
     :game-entered
     (fn [{:keys [room]}]
       (update-room! state room)
@@ -66,6 +74,9 @@
 
 (defn change-slot [slot]
   (api/post "/room/change-slot" {:slot slot}))
+
+(defn update-room-settings [settings]
+  (api/post "/room/change-settings" settings))
 
 (defn enter-game [force?]
   (api/post "/room/enter-game" {:force-start force?}))

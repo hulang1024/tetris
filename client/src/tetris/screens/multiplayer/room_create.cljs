@@ -13,7 +13,7 @@
    :top "50%"
    :left "50%"
    :transform "translate(-50%,-50%)"
-   :max-width "18rem"
+   :max-width "24rem"
    :padding "2rem"
    :display "flex"
    :flex-direction "column"
@@ -27,8 +27,8 @@
    :align-items "center"
    :margin-bottom "1rem"
    :width "100%"
-   ".label" {:min-width "5rem"}
-   "input[type=number]" {:padding "0.1rem" :font-size "1rem"}
+   ".label" {:min-width "8rem"}
+   "input[type=number],select" {:width "6rem" :padding "0.1rem" :font-size "1rem"}
    "input[type=checkbox]" {:width "1.4rem" :height "1.4rem"}})
 
 (defn- ^:async handle-create-room [room on-done messager]
@@ -41,7 +41,10 @@
 (defn room-create-dialog [on-done]
   (r/with-let [state (r/atom {:players-max 2
                               :public true
-                              :game-settings {}})]
+                              :game-settings {:mode :modern
+                                              :speed-level 1
+                                              :rs :srs
+                                              :preview-count 5}})]
     [:div {:class (overlay-class)}
      [:div {:class (settings-row)}
       [:span {:class "label"} (i18n/text [:create-room :players-max])]
@@ -56,7 +59,6 @@
       [:> Input {:type "checkbox"
                  :checked (:public @state)
                  :on-change #(swap! state assoc :public (.. % -target -checked))}]]
-
      (button {:bg-color :primary
               :on-click #(handle-create-room @state on-done js/alert)}
              (i18n/text [:create-room :ok]))

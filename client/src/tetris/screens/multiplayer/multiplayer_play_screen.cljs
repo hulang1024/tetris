@@ -33,7 +33,7 @@
             {:seed (int (* (rand) 100000))
              :handling (options-store/get-options :handling)})))
 
-(defn make [_room]
+(defn make [room]
   {:name :multiplayer-play
    :build build
    :on-entering on-entering
@@ -41,8 +41,9 @@
                  (ws-client/unsubscribe! :game-started :player-left)
                  (multiplayer/destroy!)
                  (room-manager/leave-room))
-   :game {:mode :marathon
-          :preview-count 4
-          :piece-style "b11"} 
+   :game (merge {:piece-style "b11"}
+                (-> (:game-settings room)
+                    (update :mode keyword)
+                    (update :rs keyword))) 
    :state (r/atom {:loading? true})})
 

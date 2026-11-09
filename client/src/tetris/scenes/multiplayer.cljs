@@ -3,6 +3,7 @@
             [tetris.audio :as audio]
             [tetris.core.game :as game]
             [tetris.core.input :as input]
+            [tetris.core.rs :as rs]
             [tetris.core.ruleset.classic :refer [make-classic-ruleset]]
             [tetris.core.ruleset.modern :refer [make-modern-ruleset]]
             [tetris.core.ruleset.rotation-nrs]
@@ -24,8 +25,13 @@
       (let [game-state
             (tick/initial-game
               (merge (case (:mode game)
-                       :marathon (make-modern-ruleset (get-in player [:game-config :seed]) 1)
-                       :classic (make-classic-ruleset (get-in player [:game-config :seed]) 0))
+                       :modern (make-modern-ruleset
+                                 (get-in player [:game-config :seed]) 
+                                 (:speed-level game))
+                       :classic (make-classic-ruleset
+                                  (get-in player [:game-config :seed])
+                                  (:speed-level game)))
+                     {:rotation-system (:rs game) }
                      (:handling players)))]
         {:id id
          :name (:username player)
@@ -91,7 +97,8 @@
           (swap! scene-state assoc :network-buffer buffer))
         (doseq [[uid {:keys [game-state input-state game-view]}] players]
           (game-view/render! game-view game-state (or input-state input/empty-state))
-          (when (= local-uid uid)
+          (when (or (= local-uid uid)
+                    (= (count (filter #(= (:game-status %) :playing) players)) 1))
             (sound-effect/handle game-state)))))))
 
 (def Player
@@ -105,7 +112,9 @@
 
 (def Game
   [:map
-   [:mode [:enum :classic :marathon]]
+   [:mode [:enum :classic :modern]]
+   [:speed-level :int]
+   [:rs rs/RotationSystem]
    [:preview-count :int]
    [:piece-style :string]])
 

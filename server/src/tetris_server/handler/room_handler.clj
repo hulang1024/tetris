@@ -9,8 +9,7 @@
 (def CreateRoomRequest
   [:map
    [:public :boolean]
-   [:players-max :int]
-   [:game-settings [:map]]])
+   [:players-max :int]])
 
 (def JoinRoomRequest
   [:and
@@ -27,6 +26,12 @@
   [:map
    [:seed some?]
    [:handling [:map]]])
+
+(def ChangeRoomSettingsRequest
+  [:map
+   [:players-max :int]
+   [:public :boolean]
+   [:game-settings [:map]]])
 
 (def SearchRoomRequest [:map])
 
@@ -102,6 +107,19 @@
                 (ws/broadcast-event! (room/player-uids room)
                                      :player-slot-changed
                                      {:room room :player player}))
+              (api-response (if changed? :ok :failed))))))
+
+(defn change-settings [{:keys [room-manager]
+                        settings :json-params
+                        {:keys [uid]} :session}]
+  (let [room (room-manager/get-joined-room room-manager uid)]
+    (cond
+      (nil? room) (api-response :not-found)
+      :else (let [old-room room
+                  room (room-manager/change-settings! room-manager (:id room) settings)
+                  changed? (not= room old-room)]
+              (when changed?
+                (ws/broadcast-event! (room/player-uids room) :room-changed {:room room}))
               (api-response (if changed? :ok :failed))))))
 
 (defn enter-game [{:keys [room-manager]

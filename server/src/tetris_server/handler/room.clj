@@ -13,8 +13,8 @@
   [:map
    [:id RoomId]
    [:host :int]
-   [:players-min [:int {:min 1}]]
-   [:players-max [:int {:min 1}]]
+   [:players-min [:int {:min 2}]]
+   [:players-max [:int {:min 2}]]
    [:players [:vector Player]]
    [:game-settings [:map]]
    [:state [:enum :ready :inprogress]]])
@@ -78,6 +78,9 @@
   (if (not-any? #(= (:slot %) slot) (:players room))
     (update-player room uid #(assoc % :slot slot))
     room))
+
+(defn change-settings [room settings]
+  (merge room settings))
 
 (defn leave [room uid]
   (let [room (update room :players

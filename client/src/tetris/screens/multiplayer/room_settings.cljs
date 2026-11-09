@@ -1,0 +1,95 @@
+(ns tetris.screens.multiplayer.room-settings
+  (:require-macros [cljss.core])
+  (:require
+    ["@base-ui/react/input" :refer [Input]]
+    [cljss.core :as css :refer-macros [defstyles]]
+    [tetris.i18n.core :as i18n]))
+
+(defstyles overlay-class []
+  {:margin-bottom "2rem"
+   :max-width "24rem"
+   :padding "2rem"
+   :display "flex"
+   :flex-direction "column"
+   :justify-content "center"
+   :text-align "left"
+   "button" {:margin-top "1rem"}})
+
+(defstyles settings-row []
+  {:display "flex"
+   :align-items "center"
+   :margin-bottom "1rem"
+   :width "100%"
+   ".label" {:min-width "8rem"}
+   "input[type=number],select" {:width "8rem" :padding "0.1rem" :font-size "1rem"}
+   "input[type=checkbox]" {:width "1.4rem" :height "1.4rem"}})
+
+(defn room-settings-view [{:keys [players-max public]
+                           {:keys [mode rs speed-level preview-count]} :game-settings :as state}
+                          host? on-update]
+  [:div {:class (overlay-class)}
+   (when host?
+     [:div {:class (settings-row)}
+      [:span {:class "label"} (i18n/text [:create-room :players-max])]
+      [:> Input {:type "number"
+                 :min 2
+                 :max 4
+                 :autoFocus true
+                 :value players-max
+                 :disabled (not host?)
+                 :on-value-change #(on-update
+                                     (assoc state :players-max (js/parseInt %1)))}]])
+   (when host?
+     [:div {:class (settings-row)}
+      [:span {:class "label"} (i18n/text [:create-room :is-public])]
+      [:> Input {:type "checkbox"
+                 :checked public
+                 :disabled (not host?)
+                 :on-change #(on-update (assoc state :public (.. % -target -checked)))}]])
+   [:div {:class (settings-row)}
+    [:span {:class "label"} "模式"]
+    [:select {:value mode
+              :disabled (not host?)
+              :on-change
+              (fn [event]
+                (let [mode (keyword (.. event -target -value))]
+                  (on-update
+                    (cond-> (assoc-in state [:game-settings :mode] mode)
+                      (= mode :classic) (assoc-in [:game-settings :rs] :nrs-nes)
+                      (and (= mode :modern)
+                           (contains? #{:nrs-nes :nrs-game-boy :nrs-dx}
+                                      (get-in state [:game-settings :rs])))
+                      (assoc-in [:game-settings :rs] :srs)))))}
+     [:option {:value :classic} "经典"]
+     [:option {:value :modern} "现代"]]]
+   [:div {:class (settings-row)}
+    [:span {:class "label"} "旋转系统"]
+    [:select {:value rs
+              :disabled (not host?)
+              :on-change #(on-update
+                            (assoc-in state [:game-settings :rs] (.. % -target -value)))}
+     [:option {:value :srs :disabled (= mode :classic)} "SRS"]
+     [:option {:value :prs :disabled (= mode :classic)} "PRS"]
+     [:option {:value :nrs-nes :disabled (not= mode :classic)} "NRS NES"]
+     [:option {:value :nrs-game-boy :disabled (not= mode :classic)} "NRS Game boy"]
+     [:option {:value :nrs-dx :disabled (not= mode :classic)} "NES DX"]]]
+   [:div {:class (settings-row)}
+    [:span {:class "label"} "初始速度等级"]
+    [:> Input {:type "number"
+               :min ({:classic 0 :modern 1} mode)
+               :value speed-level
+               :disabled (not host?)
+               :on-value-change #(on-update
+                                   (assoc-in state [:game-settings :speed-level]
+                                             (js/parseInt %1)))}]]
+   [:div {:class (settings-row)}
+    [:span {:class "label"} "预览块数"]
+    [:> Input {:type "number"
+               :min 0
+               :max 5
+               :value preview-count
+               :disabled (not host?)
+               :on-value-change #(on-update
+                                   (assoc-in state [:game-settings :preview-count]
+                                             (js/parseInt %1)))}]]])
+

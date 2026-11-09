@@ -6,10 +6,11 @@
     [tetris.audio :as audio]
     [tetris.i18n.core :as i18n]
     [tetris.online.api :as api]
+    [tetris.screens.multiplayer.multiplayer-play-screen :as multiplayer-play-screen]
     [tetris.screens.multiplayer.player-slot :refer [player-slots]]
     [tetris.screens.multiplayer.room-manager :as room-manager]
+    [tetris.screens.multiplayer.room-settings :refer [room-settings-view]]
     [tetris.screens.multiplayer.start-button :refer [start-button]]
-    [tetris.screens.multiplayer.multiplayer-play-screen :as multiplayer-play-screen]
     [tetris.screens.screen-navigator :as screen-navigator]
     [tetris.ui.button :refer [button]]))
 
@@ -32,20 +33,30 @@
   (screen-navigator/pop-screen!)
   (room-manager/leave-room))
 
+(defn- handle-room-settings-change [state room]
+  (let [settings (select-keys room [:players-max :public :game-settings])]
+    (swap! state merge settings)
+    (room-manager/update-room-settings settings)))
+
 (defn- build [{:keys [state]}]
   (let [{:keys [room]} @state
-        players (room-manager/slot-players @state)]
+        players (room-manager/slot-players @state)
+        local-user (api/local-user)
+        host? (= (:host room) (:id local-user))]
     [:div
      [:div {:class (screen-intro)} "多人游戏房间"]
      [:div {:class (room-info-class)}
       [:div {:class "room-no" :title "房号"} (:id room)]
       [:div {:class "is-public"} (if (:public room) "公开" "不公开")]]
-     (player-slots room players (api/local-user))
+     (room-settings-view (:room @state)
+                         host?
+                         #(handle-room-settings-change state %))
+     (player-slots room players local-user)
      [:div {:style {:margin-top "2rem"}}
       (button {:bg-color :danger :full? false
                :on-click handle-leave-room}
               (i18n/text [:multiplayer :leave]))
-      (start-button (api/local-user) room players)]]))
+      (start-button local-user room players)]]))
 
 (defn- on-entering [{:keys [state]}]
   (room-manager/listen-events

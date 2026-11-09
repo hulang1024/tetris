@@ -10,6 +10,7 @@
                             :player-left {}
                             :player-ready {}
                             :player-slot-changed {}
+                            :room-changed {}
                             :game-started {}}}))
 
 (defn- dispatch-event! [event]

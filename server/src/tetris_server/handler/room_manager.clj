@@ -55,6 +55,12 @@
       (swap! manager update :rooms put-room room)
       room)))
 
+(defn change-settings! [manager room-id settings]
+  (when-let [room (get-room manager room-id)]
+    (let [room (room/change-settings room settings)]
+      (swap! manager update :rooms put-room room)
+      room)))
+
 (defn enter-game! [manager room-id force?]
   (when-let [room (get-room manager room-id)]
     (let [room (room/enter-game room force?)]
