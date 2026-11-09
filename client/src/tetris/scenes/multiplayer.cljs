@@ -49,8 +49,6 @@
               game-status (if (game/find-event :game-over (:events game-state))
                             :game-over
                             game-status)]
-          (when (= uid 1)
-            (println "input " input-state))
           (assoc players uid
                  (assoc player
                         :game-state game-state
@@ -92,12 +90,16 @@
                scene)))
     (let [{:keys [playing? players local-uid network-buffer]} @scene-state]
       (when playing?
-        (let [buffer (network-replay/send! network-buffer 5)]
-          (swap! scene-state assoc :network-buffer buffer))
-        (doseq [[uid {:keys [game-state input-state game-view]}] players]
+        (when (= (get-in players [local-uid :game-status]) :playing)
+          (let [buffer (network-replay/send! network-buffer 10)]
+            (swap! scene-state assoc :network-buffer buffer)))
+        (doseq [[uid {:keys [game-state input-state game-view]}] players
+                :let [play-sound? (or (= local-uid uid)
+                                      (= (count (filter #(= (:game-status %) :playing)
+                                                        (vals players)))
+                                         1))]]
           (game-view/render! game-view game-state (or input-state input/empty-state))
-          (when (or (= local-uid uid)
-                    (= (count (filter #(= (:game-status %) :playing) players)) 1))
+          (when play-sound?
             (sound-effect/handle game-state)))))))
 
 (def Player

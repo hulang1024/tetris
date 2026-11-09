@@ -1,43 +1,42 @@
-(ns tetris.online.ws-codec)
+(ns tetris.online.ws-codec 
+  (:require
+    [clojure.set :as set]))
 
-(def ^:private button-bit
-  {:soft-drop 0 :move-left 2 :move-right 4
-   :rotate-cw 8 :rotate-ccw 16 :rotate-180 32
-   :hard-drop 64 :hold 128})
+(def ^:private button-id
+  {:soft-drop 1 :move-left  2 :move-right 3
+   :rotate-cw 4 :rotate-ccw 5 :rotate-180 6
+   :hard-drop 7 :hold 8})
 
-(def event-types
-  {6 :player-inputs})
+(def ^:private id-button (set/map-invert button-id))
 
-(def ^:private button-order [:soft-drop :move-left :move-right 
-                             :rotate-cw :rotate-ccw :rotate-180 
-                             :hard-drop :hold])
+(def ^:private event-types {1 :player-inputs})
 
 (defn encode-input-frames [uid input-frames]
-  (let [buf (js/Uint8Array. (+ 6 (* 4 (count input-frames))))
+  (let [buf (js/Uint8Array. (+ 5 (* 13 (count input-frames))))
         dv  (js/DataView. (.-buffer buf))]
-    (.setUint8 dv 0 6)
-    (.setUint32 dv 2 uid)
+    (.setUint8 dv 0 1)
+    (.setUint32 dv 1 uid)
     (doseq [[i [frame-no pressed-buttons]] (map-indexed vector input-frames)
-            :let [off (+ 6 (* i 4))]]
-      (.setUint8 dv off        (bit-and (bit-shift-right frame-no 16) 0xFF))
-      (.setUint16 dv (+ off 1) (bit-and frame-no 0xFFFF))
-      (.setUint8 dv (+ off 3)
-                 (reduce (fn [v b] (bit-or v (button-bit b 0))) 0 pressed-buttons)))
+            :let [off (+ 5 (* i 13))]]
+      (.setUint32 dv off frame-no)
+      (.setUint8  dv (+ off 4) (count pressed-buttons))
+      (doseq [[j button] (map-indexed vector pressed-buttons)]
+        (.setUint8 dv (+ off 5 j) (button-id button 0))))
     buf))
 
 (defn decode-input-frames [buf]
   (let [dv  (js/DataView. (.-buffer buf))
-        n (quot (- (.-length buf) 6) 4)]
+        n (quot (- (.-length buf) 5) 13)]
     {:type (event-types (.getUint8 dv 0) :unknown)
-     :data {:uid (.getUint32 dv 2)
+     :data {:uid (.getUint32 dv 1)
             :input-frames
             (mapv (fn [i]
-                    (let [w (.getUint32 dv (+ 6 (* i 4)))
-                          pressed (bit-and w 0xFF)]
-                      [(bit-shift-right w 8)
-                       (vec (keep-indexed
-                              (fn [i button] (when (bit-test pressed i) button))
-                              button-order))]))
+                    (let [off (+ 5 (* i 13))
+                          frame-no (.getUint32 dv off)
+                          button-cnt (.getUint8 dv (+ off 4))]
+                      [frame-no
+                       (mapv (fn [j] (id-button (.getUint8 dv (+ off 5 j))))
+                             (range button-cnt))]))
                   (range n))}}))
 
 (defn ->server-event [raw-data]
