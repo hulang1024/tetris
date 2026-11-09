@@ -19,7 +19,7 @@
 
 (defn step [replayer]
   (if-let [input-frame (first (:input-frames replayer))]
-    (let [pressed-buttons (second input-frame)
+    (let [[_ pressed-buttons] input-frame
           input-state (input/handle (:last-input replayer) pressed-buttons)]
       [input-state
        (-> replayer

@@ -19,20 +19,17 @@
             [tetris.scenes.render.gameplay.sound-effect :as sound-effect]
             [tetris.scenes.render.pixi-app :as app]))
 
-(defn- make-players [{:keys [game players local-uid]}]
+(defn- make-players [{:keys [players local-uid]
+                      {:keys [mode speed-level rs]} :game}]
   (mapv
-    (fn [{:keys [id] :as player}]
+    (fn [{:keys [id game-config] :as player}]
       (let [game-state
             (tick/initial-game
-              (merge (case (:mode game)
-                       :modern (make-modern-ruleset
-                                 (get-in player [:game-config :seed]) 
-                                 (:speed-level game))
-                       :classic (make-classic-ruleset
-                                  (get-in player [:game-config :seed])
-                                  (:speed-level game)))
-                     {:rotation-system (:rs game) }
-                     (:handling players)))]
+              (merge (case mode
+                       :modern (make-modern-ruleset (:seed game-config) speed-level)
+                       :classic (make-classic-ruleset (:seed game-config) speed-level))
+                     {:rotation-system rs}
+                     (:handling game-config)))]
         {:id id
          :name (:username player)
          :game-state game-state
@@ -52,6 +49,8 @@
               game-status (if (game/find-event :game-over (:events game-state))
                             :game-over
                             game-status)]
+          (when (= uid 1)
+            (println "input " input-state))
           (assoc players uid
                  (assoc player
                         :game-state game-state
@@ -125,9 +124,8 @@
    [:local-uid :int]])
 
 (defn ^:async load!
-  {:malli/schema [:=> [:cat Game] :any]}
-  [game]
-  (await (js/Promise.all [(assets/load-piece-styles (:piece-style game))
+  [piece-style]
+  (await (js/Promise.all [(assets/load-piece-styles piece-style)
                           (audio/load-sounds :gameplay)]))
   (swap! scene-state assoc :app (await (app/init)))
   (keyboard/init))
@@ -135,7 +133,7 @@
 (defn ^:async start!
   {:malli/schema [:=> [:cat StartOptions] :any]}
   [{:keys [game players local-uid] :as options}]
-  (tap> "start game")
+  (tap> ["start game" game players])
   (ws-client/subscribe!
     :player-inputs
     (fn [{:keys [uid input-frames]}]

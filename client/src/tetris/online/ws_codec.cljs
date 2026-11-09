@@ -8,7 +8,9 @@
 (def event-types
   {6 :player-inputs})
 
-(def ^:private button-order (vec (keys button-bit)))
+(def ^:private button-order [:soft-drop :move-left :move-right 
+                             :rotate-cw :rotate-ccw :rotate-180 
+                             :hard-drop :hold])
 
 (defn encode-input-frames [uid input-frames]
   (let [buf (js/Uint8Array. (+ 6 (* 4 (count input-frames))))

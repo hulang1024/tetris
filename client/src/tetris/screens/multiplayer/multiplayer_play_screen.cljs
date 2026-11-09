@@ -21,19 +21,22 @@
     :game-started
     (fn [{:keys [room users]}]
       (swap! (:state this) assoc :loading? false)
-      (multiplayer/start! {:game (:game this)
+      (multiplayer/start! {:game (merge (select-keys this [:piece-style])
+                                        (-> (:game-settings room)
+                                            (update :mode keyword)
+                                            (update :rs keyword)))
                            :local-uid (:id (api/local-user))
                            :players (mapv #(room-manager/player-info % users) (:players room))})))
   (ws-client/subscribe!
     :player-left
     (fn [] (screen-navigator/pop-screen!)))
 
-  (.then (multiplayer/load! (:game this))
+  (.then (multiplayer/load! (:piece-style this))
          #(room-manager/request-start-game
             {:seed (int (* (rand) 100000))
              :handling (options-store/get-options :handling)})))
 
-(defn make [room]
+(defn make [_room]
   {:name :multiplayer-play
    :build build
    :on-entering on-entering
@@ -41,9 +44,6 @@
                  (ws-client/unsubscribe! :game-started :player-left)
                  (multiplayer/destroy!)
                  (room-manager/leave-room))
-   :game (merge {:piece-style "b11"}
-                (-> (:game-settings room)
-                    (update :mode keyword)
-                    (update :rs keyword))) 
+   :piece-style "b11" 
    :state (r/atom {:loading? true})})
 
