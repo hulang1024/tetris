@@ -7,21 +7,18 @@
 
 (defstyles overlay-class []
   {:margin-bottom "2rem"
-   :max-width "24rem"
+   :min-width "20rem"
    :padding "2rem"
    :display "flex"
    :flex-direction "column"
-   :justify-content "center"
-   :text-align "left"
-   "button" {:margin-top "1rem"}})
+   :text-align "left"})
 
 (defstyles settings-row []
   {:display "flex"
    :align-items "center"
    :margin-bottom "1rem"
-   :width "100%"
    ".label" {:min-width "8rem"}
-   "input[type=number],select" {:width "8rem" :padding "0.1rem" :font-size "1rem"}
+   "input[type=number],select" {:flex 1 :padding "0.1rem" :font-size "1rem"}
    "input[type=checkbox]" {:width "1.4rem" :height "1.4rem"}})
 
 (defn room-settings-view [{:keys [players-max public]
@@ -36,8 +33,7 @@
                  :max 4
                  :value players-max
                  :disabled (not host?)
-                 :on-value-change #(on-update
-                                     (assoc state :players-max (js/parseInt %1)))}]])
+                 :on-value-change #(on-update (assoc state :players-max (js/parseInt %1)))}]])
    (when host?
      [:div {:class (settings-row)}
       [:span {:class "label"} (i18n/text [:create-room :is-public])]
@@ -81,9 +77,7 @@
                :min ({:classic 0 :modern 1} mode)
                :value speed-level
                :disabled (not host?)
-               :on-value-change #(on-update
-                                   (assoc-in state [:game-settings :speed-level]
-                                             (js/parseInt %1)))}]]
+               :on-value-change #(on-update (assoc-in state [:game-settings :speed-level] (js/parseInt %1)))}]]
    [:div {:class (settings-row)}
     [:span {:class "label"} "预览块数"]
     [:> Input {:type "number"
@@ -91,7 +85,5 @@
                :max (if (= mode :classic) 1 5)
                :value preview-count
                :disabled (not host?)
-               :on-value-change #(on-update
-                                   (assoc-in state [:game-settings :preview-count]
-                                             (js/parseInt %1)))}]]])
+               :on-value-change #(on-update (assoc-in state [:game-settings :preview-count] (js/parseInt %1)))}]]])
 

@@ -16,7 +16,8 @@
     [tetris.screens.screen-navigator :as screen-navigator]
     [tetris.screens.solo-play-screen :as solo-play-screen]
     [tetris.screens.tip-buttons :refer [tip-buttons-overlay]]
-    [tetris.screens.user :refer [display-user logic-overlay]]))
+    [tetris.screens.login :refer [logic-overlay]]
+    [tetris.screens.user :refer [display-user]]))
 
 (defstyles menu-item-class [item-id]
   {:margin-top (if (= item-id :back) "1em" 0)

@@ -5,10 +5,10 @@
             [tetris.audio :as audio]))
 
 (def ^:private colors
-  {:default "lightblue"
+  {:default "#fafafa"
    :primary "cornflowerblue"
-   :danger "pink"
    :second "gold"
+   :danger "pink"
    :success "lightgreen"})
 
 (defstyles button-class [{:keys [bg-color full?]}]
@@ -17,10 +17,11 @@
    :padding "0.2rem 4rem"
    :font-size "1rem"
    :border-radius "2px"
-   :background (get colors bg-color)})
+   :background (get colors (or bg-color :default))})
 
 (defn button [{:keys [on-click] :as props} children]
-  [:> Button {:class (button-class (select-keys props [:bg-color :full?]))
+  [:> Button {:class [(button-class (select-keys props [:bg-color :full?]))
+                      (:class props)]
               :style (:style props)
               :disabled (:disabled props)
               :on-click (fn []

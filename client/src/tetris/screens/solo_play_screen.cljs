@@ -72,7 +72,7 @@
            :continue-game (do (swap! state assoc :game-status :playing)
                               (swap! (:scene-state @state) assoc :status :playing))
            :start-over (screen-navigator/replace-screen!
-                         (make (select-keys (:settings @state) [:mode])))
+                         (make (get-in @state [:settings :mode])))
            :custom-controls (screen-navigator/push-screen! (controls-options-screen/make))
            :exit-game (screen-navigator/pop-screen!)
            :replay (screen-navigator/push-screen!

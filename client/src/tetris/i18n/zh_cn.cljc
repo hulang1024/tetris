@@ -38,6 +38,7 @@
    :click-login "点击登录"
    :login {:username "用户名"
            :password "密码"
+           :auto-login "自动登录"
            :button "登录"}
    :register {:button "注册"}
    :ok "确定"

@@ -1,8 +1,12 @@
 (ns tetris.options-store 
   (:require [tetris.options :as options :refer [Controls Handling Options]]))
 
+(def ^:private storage-key "tetris")
+
+(def Category [:enum :handling :controls :username :password :auto-login-enabled])
+
 (defn- read-options []
-  (let [object (js/JSON.parse (js/localStorage.getItem "tetris"))]
+  (let [object (js/JSON.parse (js/localStorage.getItem storage-key))]
     (if object
       (-> (js->clj object {:keywordize-keys true})
           (update :controls
@@ -18,15 +22,14 @@
 (defn get-options
   {:malli/schema [:function
                   [:=> [:cat] Options]
-                  [:=> [:cat [:enum :handling :controls]] [:or Handling Controls]]]}
+                  [:=> [:cat Category] [:or Handling Controls :nil :string :boolean]]]}
   ([] (read-options))
   ([category] (get (read-options) category)))
 
 (defn save-options!
-  {:malli/schema [:=> [:cat [:enum :handling :controls]
-                       [:or Handling Controls]] Options]}
+  {:malli/schema [:=> [:cat Category [:or Handling Controls :string :boolean]] Options]}
   [category sub-options]
   (let [opts (assoc (get-options) category sub-options)
         json (js/JSON.stringify (clj->js opts))]
-    (js/localStorage.setItem "tetris" json)
+    (js/localStorage.setItem storage-key json)
     (reset! options opts)))

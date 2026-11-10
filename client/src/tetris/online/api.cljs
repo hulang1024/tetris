@@ -1,7 +1,8 @@
 (ns tetris.online.api
   (:require [ajax.core :refer [ajax-request json-request-format]]
             [reagent.core :as r]
-            [tetris.online.ws-client :as ws-client]))
+            [tetris.online.ws-client :as ws-client]
+            [tetris.options-store :as options-store]))
 
 (def State [:enum :offline :loggin-in :online])
 
@@ -40,20 +41,28 @@
 (defn get! [path query-params]
   (request path :get query-params))
 
-(defn ^:async login! [user]
+(defn ^:async login! [username password]
   (swap! state assoc :state :loggin-in)
-  (let [resp (await (post "/login" user))]
+  (let [resp (await (post "/login" {:username username :password password}))]
     (if (= (:code resp) :ok)
       (swap! state assoc :state :online :user (get-in resp [:data :user]))
       (swap! state assoc :state :offline))
     resp))
 
-(defn register! [user]
-  (post "/register" user))
+(defn register! [username password]
+  (post "/register" {:username username :password password}))
+
+(defn- ^:async auto-login []
+  (when (options-store/get-options :auto-login-enabled)
+    (let [resp (await (login! (options-store/get-options :username)
+                              (options-store/get-options :password)))]
+      (when (not= (:code resp) :ok)
+        (options-store/save-options! :auto-login-enabled false)))))
 
 (defn ^:async load-session-user! []
   (let [resp (await (get! "/whoami" nil))]
-    (when (= (:code resp) :ok)
+    (if (= (:code resp) :ok)
       (swap! state assoc
              :state :online
-             :user (get-in resp [:data :user])))))
+             :user (get-in resp [:data :user]))
+      (auto-login))))
