@@ -34,7 +34,6 @@
       [:> Input {:type "number"
                  :min 2
                  :max 4
-                 :autoFocus true
                  :value players-max
                  :disabled (not host?)
                  :on-value-change #(on-update
@@ -54,12 +53,15 @@
               (fn [event]
                 (let [mode (keyword (.. event -target -value))]
                   (on-update
-                    (cond-> (assoc-in state [:game-settings :mode] mode)
-                      (= mode :classic) (assoc-in [:game-settings :rs] :nrs-nes)
-                      (and (= mode :modern)
-                           (contains? #{:nrs-nes :nrs-game-boy :nrs-dx}
-                                      (get-in state [:game-settings :rs])))
-                      (assoc-in [:game-settings :rs] :srs)))))}
+                    (let [state (assoc-in state [:game-settings :mode] mode)]
+                      (if (= mode :classic)
+                        (-> state
+                            (assoc-in [:game-settings :rs] :nrs-nes)
+                            (assoc-in [:game-settings :preview-count] 1))
+                        (if (contains? #{:nrs-nes :nrs-game-boy :nrs-dx}
+                                       (get-in state [:game-settings :rs]))
+                          (assoc-in state [:game-settings :rs] :srs)
+                          state))))))}
      [:option {:value :classic} "经典"]
      [:option {:value :modern} "现代"]]]
    [:div {:class (settings-row)}
@@ -86,7 +88,7 @@
     [:span {:class "label"} "预览块数"]
     [:> Input {:type "number"
                :min 0
-               :max 5
+               :max (if (= mode :classic) 1 5)
                :value preview-count
                :disabled (not host?)
                :on-value-change #(on-update

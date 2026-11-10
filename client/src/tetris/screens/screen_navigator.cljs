@@ -59,7 +59,8 @@
   (load-screen! screen #(swap! state replace-screen %)))
 
 (defn on-keydown [event]
-  (.preventDefault event)
+  (when (.-ctrlKey event)
+    (.preventDefault event))
   (when-let [screen (active-screen)]
     (let [handled? (trigger-callback screen :on-keydown event)]
       (when (and (not handled?) (= (.-code event) "Escape"))
