@@ -6,12 +6,15 @@
     [tetris.audio :as audio]
     [tetris.i18n.core :as i18n]
     [tetris.online.api :as api]
+    [tetris.screens.controls-options-screen :as controls-options-screen]
+    [tetris.screens.gameplay-options-screen :as gameplay-options-screen]
     [tetris.screens.multiplayer.multiplayer-play-screen :as multiplayer-play-screen]
     [tetris.screens.multiplayer.player-slot :refer [player-slots]]
     [tetris.screens.multiplayer.room-manager :as room-manager]
     [tetris.screens.multiplayer.room-settings :refer [room-settings-view]]
     [tetris.screens.multiplayer.start-button :refer [start-button]]
     [tetris.screens.screen-navigator :as screen-navigator]
+    [tetris.screens.tip-buttons :refer [tip-buttons-overlay]]
     [tetris.ui.button :refer [button]]))
 
 (defstyles screen-intro []
@@ -56,7 +59,9 @@
       (button {:bg-color :danger :full? false
                :on-click handle-leave-room}
               (i18n/text [:multiplayer :leave]))
-      (start-button local-user room players)]]))
+      (start-button local-user room players)]
+     (tip-buttons-overlay ["Ctrl-O" "控制设置"]
+                          ["Ctrl-G" "游戏设置"])]))
 
 (defn- on-entering [{:keys [state]}]
   (room-manager/listen-events
@@ -78,10 +83,17 @@
   (when (= (count (get-in @state [:room :players])) 1)
     (audio/play :multiplayer/player-joined)))
 
+(defn- on-keydown [_ event]
+  (when (.-ctrlKey event)
+    (case (.-code event)
+      "KeyO" (screen-navigator/push-screen! (controls-options-screen/make))
+      "KeyG" (screen-navigator/push-screen! (gameplay-options-screen/make)))))
+
 (defn make [{:keys [room users]}]
   {:name :multiplayer-ready
    :build build
    :on-entering on-entering
    :on-exiting room-manager/exit  
+   :on-keydown on-keydown
    :state (r/atom (room-manager/make room users))})
 

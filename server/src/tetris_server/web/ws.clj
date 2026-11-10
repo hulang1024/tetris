@@ -27,6 +27,9 @@
           :when (some? ch)]
     (ws/send-binary! ch bin)))
 
+(defn count-connected []
+  (count @ws-channels))
+
 (def ws-interceptor
   (ws/websocket-interceptor
     ::game
@@ -34,10 +37,7 @@
                  (assert (some? (:session request)))
                  (add! (-> request :session :uid) channel)
                  request)
-     :on-text  (fn [channel _ msg-json]
-                 (when-let [msg (json/parse-string msg-json true)]
-                   (when (= (:type msg) "stat-online-users")
-                     (ws/send-text! channel (str (count @ws-channels))))))
+     ; :on-text  (fn [channel _ msg-json])
      :on-binary (fn [_channel {:keys [room-manager] {:keys [uid]} :session} byte-buffer]
                   (let [room (room-manager/get-joined-room room-manager uid)]
                     (when room
