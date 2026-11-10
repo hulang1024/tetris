@@ -39,7 +39,7 @@
           (on-done nil)))))
 
 (defn room-create-dialog [on-done]
-  (r/with-let [state (r/atom {:players-max 2
+  (r/with-let [state (r/atom {:players-max 4
                               :public true
                               :game-settings {:mode :modern
                                               :speed-level 1

@@ -29,7 +29,6 @@
 
 (def ChangeRoomSettingsRequest
   [:map
-   [:players-max :int]
    [:public :boolean]
    [:game-settings [:map]]])
 

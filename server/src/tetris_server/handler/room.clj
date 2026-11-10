@@ -110,5 +110,4 @@
       room)))
 
 (defn request-start-game [room uid game-config]
-  (update-player room uid
-                 #(assoc % :state :inprogress :game-config game-config)))
+  (update-player room uid #(assoc % :state :inprogress :game-config game-config)))

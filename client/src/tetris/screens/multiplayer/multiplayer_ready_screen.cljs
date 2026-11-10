@@ -38,7 +38,7 @@
   (room-api/leave-room))
 
 (defn- handle-room-settings-change [state room]
-  (let [settings (select-keys room [:players-max :public :game-settings])]
+  (let [settings (select-keys room [:public :game-settings])]
     (swap! state merge settings)
     (room-api/update-room-settings settings)))
 

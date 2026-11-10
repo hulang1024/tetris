@@ -21,19 +21,10 @@
    "input[type=number],select" {:flex 1 :padding "0.1rem" :font-size "1rem"}
    "input[type=checkbox]" {:width "1.4rem" :height "1.4rem"}})
 
-(defn room-settings-view [{:keys [players-max public]
+(defn room-settings-view [{:keys [public]
                            {:keys [mode rs speed-level preview-count]} :game-settings :as state}
                           host? on-update]
   [:div {:class (overlay-class)}
-   (when host?
-     [:div {:class (settings-row)}
-      [:span {:class "label"} (i18n/text [:create-room :players-max])]
-      [:> Input {:type "number"
-                 :min 2
-                 :max 4
-                 :value players-max
-                 :disabled (not host?)
-                 :on-value-change #(on-update (assoc state :players-max (js/parseInt %1)))}]])
    (when host?
      [:div {:class (settings-row)}
       [:span {:class "label"} (i18n/text [:create-room :is-public])]
