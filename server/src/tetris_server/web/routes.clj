@@ -72,4 +72,5 @@
      (api-route :post "/room/change-slot" room-handler/change-slot room-handler/ChangeSlotRequest)
      (api-route :post "/room/change-settings" room-handler/change-settings room-handler/ChangeRoomSettingsRequest)
      (api-route :post "/room/enter-game" room-handler/enter-game nil)
+     (api-route :post "/room/quit-game" room-handler/quit-game nil)
      (api-route :post "/room/request-start-game" room-handler/request-start-game room-handler/RequestStartGameRequest)]))

@@ -88,18 +88,16 @@
                                (network-replay/append-input-frame
                                  buffer [(:frame local-game) pressed-buttons])))))
                scene)))
-    (let [{:keys [playing? players local-uid network-buffer]} @scene-state]
+    (let [{:keys [playing? players local-uid network-buffer]} @scene-state
+          local-playing? (= (get-in players [local-uid :game-status]) :playing)
+          playing-player-cnt (count (filter #(= (:game-status %) :playing) (vals players)))]
       (when playing?
-        (when (= (get-in players [local-uid :game-status]) :playing)
+        (when (and local-playing? (> playing-player-cnt 1))
           (let [buffer (network-replay/send! network-buffer 10)]
             (swap! scene-state assoc :network-buffer buffer)))
-        (doseq [[uid {:keys [game-state input-state game-view]}] players
-                :let [play-sound? (or (= local-uid uid)
-                                      (= (count (filter #(= (:game-status %) :playing)
-                                                        (vals players)))
-                                         1))]]
+        (doseq [[uid {:keys [game-state input-state game-view]}] players]
           (game-view/render! game-view game-state (or input-state input/empty-state))
-          (when play-sound?
+          (when (or (= local-uid uid) (= playing-player-cnt 1))
             (sound-effect/handle game-state)))))))
 
 (def Player
@@ -166,8 +164,12 @@
     (.. app -ticker (add tick))
     (.appendChild js/document.body (.-canvas app))))
 
+(defn on-player-quited [_room player]
+  (swap! scene-state assoc-in [:players (:id player) :game-status] :quited))
+
 (defn destroy! []
   (when-let [app (:app @scene-state)]
     (tap> "destroy game")
     (.destroy app #js {:removeView true})
     (swap! scene-state assoc :app nil)))
+

@@ -5,7 +5,7 @@
     [cljss.core :as css :refer-macros [defstyles]]
     [reagent.core :as r]
     [tetris.i18n.core :as i18n]
-    [tetris.screens.multiplayer.room-manager :as room-manager]
+    [tetris.online.room-api :as room-api]
     [tetris.ui.button :refer [button]]))
 
 (defstyles overlay-class []
@@ -20,7 +20,7 @@
    :justify-content "center"
    :background "#eee"
    :text-align "left"
-   "button" {:margin-top "1rem"}})
+   "button" {:margin-top "0.5rem"}})
 
 (defstyles settings-row []
   {:display "flex"
@@ -32,7 +32,7 @@
    "input[type=checkbox]" {:width "1.4rem" :height "1.4rem"}})
 
 (defn- ^:async handle-create-room [room on-done messager]
-  (let [resp (await (room-manager/create-room room))]
+  (let [resp (await (room-api/create-room room))]
     (if (= (:code resp) :ok)
       (on-done (:data resp))
       (do (messager "创建失败")

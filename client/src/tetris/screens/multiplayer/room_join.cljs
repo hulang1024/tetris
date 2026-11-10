@@ -6,7 +6,7 @@
     [clojure.string :as str]
     [reagent.core :as r]
     [tetris.i18n.core :as i18n]
-    [tetris.screens.multiplayer.room-manager :as room-manager]
+    [tetris.online.room-api :as room-api]
     [tetris.ui.button :refer [button]]))
 
 (defstyles overlay-class []
@@ -32,7 +32,7 @@
    "input[type=text]" {:padding "0.1rem" :font-size "1rem"}})
 
 (defn- ^:async handle-join-room [{:keys [room-no]} on-done messager]
-  (let [resp (await (room-manager/join-room room-no))]
+  (let [resp (await (room-api/join-room room-no))]
     (if (= (:code resp) :ok)
       (on-done (:data resp))
       (do (messager (i18n/text [:join-room (:code resp)]))

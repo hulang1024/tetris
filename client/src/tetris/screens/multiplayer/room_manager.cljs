@@ -1,7 +1,5 @@
 (ns tetris.screens.multiplayer.room-manager 
-  (:require
-    [tetris.online.api :as api]
-    [tetris.online.ws-client :as ws-client]))
+  (:require [tetris.online.ws-client :as ws-client]))
 
 (defn player-info [player users]
   (when player
@@ -21,14 +19,16 @@
      :readied-count readied-count
      :all-readied? (= joined-count readied-count)}))
 
-(defn make [room users] {:room room :users users})
+(defn ->room [room]
+  (-> room
+      (update :state keyword)
+      (update-in [:game-settings :mode] keyword)
+      (update-in [:game-settings :rs] keyword)))
+
+(defn make [room users] {:room (->room room) :users users})
 
 (defn- update-room! [state room]
-  (swap! state assoc :room
-         (-> room
-             (update :state keyword)
-             (update-in [:game-settings :mode] keyword)
-             (update-in [:game-settings :rs] keyword))))
+  (swap! state assoc :room (->room room)))
 
 (defn listen-events [state {:keys [on-player-joined on-player-left on-player-ready on-game-entered]}]
   (ws-client/subscribe!
@@ -56,6 +56,10 @@
     (fn [{:keys [room]}] (update-room! state room)))
 
   (ws-client/subscribe!
+    :player-game-quited
+    (fn [{:keys [room]}] (update-room! state room)))
+
+  (ws-client/subscribe!
     :room-changed
     (fn [{:keys [room]}] (update-room! state room)))
 
@@ -66,33 +70,6 @@
       (on-game-entered (:room @state))))
   state)
 
-(defn leave-room []
-  (api/post "/room/leave-room"))
-
-(defn toggle-ready []
-  (api/post "/room/toggle-ready"))
-
-(defn change-slot [slot]
-  (api/post "/room/change-slot" {:slot slot}))
-
-(defn update-room-settings [settings]
-  (api/post "/room/change-settings" settings))
-
-(defn enter-game [force?]
-  (api/post "/room/enter-game" {:force-start force?}))
-
-(defn request-start-game [game-config]
-  (api/post "/room/request-start-game" game-config))
-
-(defn create-room [room]
-  (api/post "/room/create-room" room))
-
-(defn join-room [room-id & [quick-join?]]
-  (api/post "/room/join-room"
-            (if quick-join? {:quick_join true} {:room_id room-id})))
-
-(defn exit []
-  (doseq [event-type [:player-joined :player-left :player-ready
-                      :player-slot-changed :game-entered]]
-    (ws-client/unsubscribe! event-type)))
-
+(defn unlisten-events []
+  (run! ws-client/unsubscribe! [:player-joined :player-left :player-ready
+                                :player-slot-changed :game-entered]))

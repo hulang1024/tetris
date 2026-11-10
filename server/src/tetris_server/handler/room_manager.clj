@@ -12,10 +12,10 @@
   (vec (vals (:rooms @manager))))
 
 (defn get-match-room [manager _uid]
-  (first (filter (fn [room]
-                   (and (= (:state room) :ready)room
-                        (< (count (:players room)) (:players-max room))))
-                 (vals (:rooms @manager)))))
+  (->> (vals (:rooms @manager))
+       (sort (fn [room] (if (= (:state room) :ready) 1 2)))
+       (filter (fn [room] (< (count (:players room)) (:players-max room))))
+       (first)))
 
 (defn get-room [manager room-id]
   (get (:rooms @manager) room-id))
@@ -64,6 +64,12 @@
 (defn enter-game! [manager room-id force?]
   (when-let [room (get-room manager room-id)]
     (let [room (room/enter-game room force?)]
+      (swap! manager update :rooms put-room room)
+      room)))
+
+(defn quit-game! [manager room-id uid]
+  (when-let [room (get-room manager room-id)]
+    (let [room (room/quit-game room uid)]
       (swap! manager update :rooms put-room room)
       room)))
 

@@ -6,7 +6,8 @@
   (r/atom {:state :offline
            :conn nil
            :event-queue []
-           :event-handlers {:player-joined {}
+           :event-handlers {:closed {}
+                            :player-joined {}
                             :player-left {}
                             :player-ready {}
                             :player-slot-changed {}
@@ -29,7 +30,9 @@
     (.addEventListener ws "open"
                        (fn [] (swap! state assoc :state :online)))
     (.addEventListener ws "close"
-                       (fn [] (swap! state assoc :state :offline)))
+                       (fn []
+                         (swap! state assoc :state :offline)
+                         (dispatch-event! {:type :closed :data nil})))
     (.addEventListener ws "message"
                        (fn [event]
                          (dispatch-event! (codec/->server-event (.-data event)))))))
@@ -60,4 +63,5 @@
    (swap! state update-in [:event-handlers event-type] dissoc handler-key)))
 
 (defn broadcast-input-frames! [uid input-frames]
-  (.send (:conn @state) (codec/encode-input-frames uid input-frames)))
+  (when (= (.-readyState (:conn @state)) js/WebSocket.OPEN)
+    (.send (:conn @state) (codec/encode-input-frames uid input-frames))))

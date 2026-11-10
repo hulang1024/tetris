@@ -6,6 +6,7 @@
     [tetris.audio :as audio]
     [tetris.i18n.core :as i18n]
     [tetris.online.api :as api]
+    [tetris.online.room-api :as room-api]
     [tetris.screens.controls-options-screen :as controls-options-screen]
     [tetris.screens.gameplay-options-screen :as gameplay-options-screen]
     [tetris.screens.multiplayer.multiplayer-play-screen :as multiplayer-play-screen]
@@ -34,36 +35,14 @@
 (defn- handle-leave-room []
   (audio/play :multiplayer/player-left)
   (screen-navigator/pop-screen!)
-  (room-manager/leave-room))
+  (room-api/leave-room))
 
 (defn- handle-room-settings-change [state room]
   (let [settings (select-keys room [:players-max :public :game-settings])]
     (swap! state merge settings)
-    (room-manager/update-room-settings settings)))
+    (room-api/update-room-settings settings)))
 
-(defn- build [{:keys [state]}]
-  (let [{:keys [room]} @state
-        players (room-manager/slot-players @state)
-        local-user (api/local-user)
-        host? (= (:host room) (:id local-user))]
-    [:div
-     [:div {:class (screen-intro)} "多人游戏房间"]
-     [:div {:class (room-info-class)}
-      [:div {:class "room-no" :title "房号"} (:id room)]
-      [:div {:class "is-public"} (if (:public room) "公开" "不公开")]]
-     (room-settings-view (:room @state)
-                         host?
-                         #(handle-room-settings-change state %))
-     (player-slots room players local-user)
-     [:div {:style {:margin-top "2rem"}}
-      (button {:bg-color :danger :full? false
-               :on-click handle-leave-room}
-              (i18n/text [:multiplayer :leave]))
-      (start-button local-user room players)]
-     (tip-buttons-overlay ["Ctrl-O" "控制设置"]
-                          ["Ctrl-G" "游戏设置"])]))
-
-(defn- on-entering [{:keys [state]}]
+(defn listen-events [state]
   (room-manager/listen-events
     state
     {:on-player-joined #(audio/play :multiplayer/player-joined)
@@ -77,11 +56,40 @@
                                             :multiplayer/player-ready
                                             :multiplayer/player-unready))))))
      :on-game-entered (fn [room]
-                        (screen-navigator/replace-screen!
-                          (multiplayer-play-screen/make room)))})
+                        (screen-navigator/push-screen!
+                          (multiplayer-play-screen/make room)))}))
+
+(defn- build [{:keys [state]}]
+  (let [{:keys [room]} @state
+        players (room-manager/slot-players @state)
+        local-user (api/local-user)
+        host? (= (:host room) (:id local-user))]
+    [:div
+     [:div {:class (screen-intro)} "多人游戏房间"]
+     [:div {:class (room-info-class)}
+      [:div {:class "room-no" :title "房号"} (:id room)]
+      [:div {:class "is-public"} (if (:public room) "公开" "不公开")]]
+     (room-settings-view room host? #(handle-room-settings-change state %))
+     (player-slots room players local-user)
+     [:div {:style {:margin-top "2rem"}}
+      (button {:bg-color :danger :full? false
+               :on-click handle-leave-room}
+              (i18n/text [:multiplayer :leave]))
+      (start-button local-user room players)]
+     (tip-buttons-overlay ["Ctrl-O" "控制设置"]
+                          ["Ctrl-G" "游戏设置"])]))
+
+(defn- on-entering [{:keys [state]}]
+  (listen-events state)
   (audio/load-sounds :multiplayer)
   (when (= (count (get-in @state [:room :players])) 1)
     (audio/play :multiplayer/player-joined)))
+
+(defn- on-resuming [screen room-id]
+  (.then (room-api/join-room room-id)
+         (fn [{{:keys [room users]} :data}]
+           (reset! (:state screen) (room-manager/make room users))
+           (listen-events (:state screen)))))
 
 (defn- on-keydown [_ event]
   (when (.-ctrlKey event)
@@ -93,7 +101,11 @@
   {:name :multiplayer-ready
    :build build
    :on-entering on-entering
-   :on-exiting room-manager/exit  
+   :on-resuming #(on-resuming % (:id room))
+   :on-suspending room-manager/unlisten-events
+   :on-exiting (fn []
+                 (room-manager/unlisten-events)
+                 (room-api/leave-room))
    :on-keydown on-keydown
    :state (r/atom (room-manager/make room users))})
 

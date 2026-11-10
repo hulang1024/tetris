@@ -4,7 +4,7 @@
 (def Player
   [:map
    [:id :int]
-   [:state [:enum :not-ready :readied :play-requested]]
+   [:state [:enum :not-ready :readied :inprogress]]
    [:game-config [:map]]])
 
 (def RoomId :string)
@@ -103,6 +103,12 @@
     (assoc room :state :inprogress)
     room))
 
+(defn quit-game [room uid]
+  (let [room (update-player room uid #(assoc % :state :not-ready))]
+    (if (every-players? room :not-ready)
+      (assoc room :state :ready)
+      room)))
+
 (defn request-start-game [room uid game-config]
   (update-player room uid
-                 #(assoc % :state :play-requested :game-config game-config)))
+                 #(assoc % :state :inprogress :game-config game-config)))

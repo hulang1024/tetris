@@ -5,19 +5,19 @@
     [reagent.core :as r]
     [tetris.audio :as audio]
     [tetris.online.api :as api]
-    [tetris.ui.menu :as menu]
-    [tetris.ui.menu-overlay :refer [menu-overlay]]
+    [tetris.online.room-api :as room-api]
     [tetris.screens.controls-options-screen :as controls-options-screen]
     [tetris.screens.gameplay-options-screen :as gameplay-options-screen]
+    [tetris.screens.login :refer [logic-overlay]]
     [tetris.screens.multiplayer.multiplayer-ready-screen :as multiplayer-ready-screen]
     [tetris.screens.multiplayer.room-create :refer [room-create-dialog]]
     [tetris.screens.multiplayer.room-join :refer [room-join-dialog]]
-    [tetris.screens.multiplayer.room-manager :as room-manager]
     [tetris.screens.screen-navigator :as screen-navigator]
     [tetris.screens.solo-play-screen :as solo-play-screen]
     [tetris.screens.tip-buttons :refer [tip-buttons-overlay]]
-    [tetris.screens.login :refer [logic-overlay]]
-    [tetris.screens.user :refer [display-user]]))
+    [tetris.screens.user :refer [display-user]]
+    [tetris.ui.menu :as menu]
+    [tetris.ui.menu-overlay :refer [menu-overlay]]))
 
 (defstyles menu-item-class [item-id]
   {:margin-top (if (= item-id :back) "1em" 0)
@@ -34,7 +34,7 @@
    :height "40px"})
 
 (defn- ^:async join-room [room-id quick-join?]
-  (let [resp (await (room-manager/join-room room-id quick-join?))]
+  (let [resp (await (room-api/join-room room-id quick-join?))]
     (if (= (:code resp) :ok)
       (screen-navigator/push-screen! (multiplayer-ready-screen/make (:data resp)))
       (js/alert "未找到房间"))))
@@ -64,6 +64,8 @@
                     (audio/play :menu-gameplay-select)
                     (when (not (menu/menu? (:menu @state) id)) 
                       (audio/play :menu-select)))
+                  (when (= id :multiplayer)
+                    (audio/load-sounds :multiplayer))
                   (cond
                     (and (= parent :multiplayer) (= (api/get-state) :offline))
                     (swap! state assoc :login-opened true)

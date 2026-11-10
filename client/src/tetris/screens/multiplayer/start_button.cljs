@@ -1,17 +1,18 @@
 (ns tetris.screens.multiplayer.start-button
   (:require [tetris.i18n.core :as i18n]
+            [tetris.online.room-api :as room-api]
             [tetris.screens.multiplayer.room-manager :as room-manager]
             [tetris.ui.button :refer [button]]))
 
 (defn- ^:async start-game [force?]
-  (let [resp (await (room-manager/enter-game force?))]
+  (let [resp (await (room-api/enter-game force?))]
     (when (not= (:code resp) :ok)
       (js/alert "开始失败"))))
 
 (defn- handle-start [button-command]
   (case button-command
-    :ready (room-manager/toggle-ready)
-    :unready (room-manager/toggle-ready)
+    :ready (room-api/toggle-ready)
+    :unready (room-api/toggle-ready)
     :start-game (start-game false)
     :force-start-game (start-game true)))
 
