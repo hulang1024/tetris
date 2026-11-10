@@ -11,6 +11,7 @@
                             :player-left {}
                             :player-ready {}
                             :player-slot-changed {}
+                            :player-game-quitted {}
                             :room-changed {}
                             :game-started {}}}))
 
@@ -60,7 +61,10 @@
   ([event-type]
    (unsubscribe! event-type event-type))
   ([event-type handler-key]
-   (swap! state update-in [:event-handlers event-type] dissoc handler-key)))
+   (if (= event-type :all)
+     (doseq [[event-type _] (:event-handlers @state)]
+       (swap! state assoc-in [:event-handlers event-type] {}))
+     (swap! state update-in [:event-handlers event-type] dissoc handler-key))))
 
 (defn broadcast-input-frames! [uid input-frames]
   (when (= (.-readyState (:conn @state)) js/WebSocket.OPEN)

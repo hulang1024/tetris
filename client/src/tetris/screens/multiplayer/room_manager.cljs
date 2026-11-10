@@ -56,7 +56,7 @@
     (fn [{:keys [room]}] (update-room! state room)))
 
   (ws-client/subscribe!
-    :player-game-quited
+    :player-game-quitted
     (fn [{:keys [room]}] (update-room! state room)))
 
   (ws-client/subscribe!
@@ -71,5 +71,4 @@
   state)
 
 (defn unlisten-events []
-  (run! ws-client/unsubscribe! [:player-joined :player-left :player-ready
-                                :player-slot-changed :game-entered]))
+  (ws-client/unsubscribe! :all))

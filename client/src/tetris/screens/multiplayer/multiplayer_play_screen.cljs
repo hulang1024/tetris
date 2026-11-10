@@ -29,10 +29,15 @@
                            :local-uid (:id (api/local-user))
                            :players (mapv #(room-manager/player-info % users) (:players room))})))
   (ws-client/subscribe! :closed #(screen-navigator/pop-screen!))
-  (ws-client/subscribe! :player-game-quited
+  (ws-client/subscribe! :player-game-quitted
                         (fn [{:keys [room player]}]
-                          (multiplayer/on-player-quited room player)))
-
+                          (multiplayer/on-player-event room player :player-game-quitted)))
+  (ws-client/subscribe! :player-left
+                        (fn [{:keys [room player]}]
+                          (multiplayer/on-player-event room player :player-left)))
+  (ws-client/subscribe! :player-joined
+                        (fn [{:keys [room player]}]
+                          (multiplayer/on-player-event room player :player-joined)))
   (.then (multiplayer/load! (:piece-style this))
          #(room-api/request-start-game
             {:seed (int (* (rand) 100000))
@@ -48,7 +53,7 @@
    :build build
    :on-entering on-entering
    :on-exiting (fn []
-                 (run! ws-client/unsubscribe! [:game-started :player-left :closed])
+                 (ws-client/unsubscribe! :all)
                  (multiplayer/destroy!))
    :on-keydown on-keydown
    :piece-style "b11" 

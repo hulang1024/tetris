@@ -3,7 +3,8 @@
     ["pixi.js" :as pixi]
     [tetris.scenes.render.gameplay.piece :refer [piece-container render-piece]]))
 
-(def hud-layout {:title-font-size 24
+(def hud-layout {:text-font-size 24
+                 :title-font-size 24
                  :value-font-size 32})
 
 (defn stat-item-y [item-n t]
@@ -40,16 +41,21 @@
         :distance 8}
    :fill "#eeeeee"})
 
-(defn title-view [y anchor text]
+(defn text-view [y anchor label text & [style]]
   (pixi/Text.
-    #js {:label "title"
+    #js {:label label
          :y y
          :anchor (clj->js anchor)
          :text text
          :style (clj->js
                   (merge stats-text-style
                          {:fontWeight "bold"
-                          :fontSize (:title-font-size hud-layout)}))}))
+                          :fontSize (:text-font-size hud-layout)}
+                         style))}))
+
+(defn title-view [y anchor text]
+  (text-view y anchor "title" text
+             {:fontSize (:title-font-size hud-layout)}))
 
 (defn number-view [y anchor label text]
   (pixi/Text.
@@ -85,6 +91,8 @@
         anchor {:x 0 :y 0}]
     (doto container
       (.addChild (title-view (stat-item-y 0 :t) anchor player-name))
+      (.addChild (text-view (stat-item-y 0 :v) anchor "status" ""
+                            {:fill "#ff1111"}))
       (.addChild (title-view (stat-item-y 1 :t) anchor "SCORE"))
       (.addChild (number-view (stat-item-y 1 :v) anchor "score" "0")))
     (set! (.-y container) (- (get-in layout [:matrix :height])
@@ -121,8 +129,13 @@
         right (.getChildByLabel ^js (:hud @view) "right")
         speed-level-view (.getChildByLabel left "speed-level")
         lines-view (.getChildByLabel left "lines")
-        score-view (.getChildByLabel right "score")]
+        score-view (.getChildByLabel right "score")
+        status-view (.getChildByLabel right "status")]
     (set! (.-text speed-level-view) (:speed-level game-state))
     (set! (.-text lines-view) (:lines-cleared game-state))
-    (set! (.-text score-view) (:score game-state))))
+    (set! (.-text score-view) (:score game-state))
+    (cond
+      (= (:status game-state) :quitted) (set! (.-text status-view) "QUITTED")
+      (= (:status game-state) :left-room) (set! (.-text status-view) "LEFT ROOM")
+      :else nil)))
 

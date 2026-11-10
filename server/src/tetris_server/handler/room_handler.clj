@@ -141,7 +141,7 @@
       (nil? room) (api-response :not-found)
       (not= (:state room) :inprogress) (api-response :failed)
       :else (let [room (room-manager/quit-game! room-manager (:id room) uid)]
-              (ws/broadcast-event! (room/player-uids room) :player-game-quited
+              (ws/broadcast-event! (room/player-uids room) :player-game-quitted
                                    {:room room
                                     :player (room/find-player room uid)})
               (api-response :ok)))))
