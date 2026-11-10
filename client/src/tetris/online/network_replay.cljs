@@ -1,7 +1,6 @@
 (ns tetris.online.network-replay 
   (:require
-    [tetris.core.input :as input]
-    [tetris.online.ws-client :as ws-client]))
+    [tetris.core.input :as input]))
 
 (defn make-input-buffer [uid] {:uid uid :input-frames []})
 
@@ -26,10 +25,3 @@
            (update :input-frames subvec 1)
            (assoc :last-input input-state))])
     [nil replayer]))
-
-(defn send! [{:keys [uid input-frames] :as buffer} n]
-  (if (>= (count input-frames) n)
-    (do (ws-client/broadcast-input-frames! uid input-frames)
-        (assoc buffer :input-frames []))
-    buffer))
-

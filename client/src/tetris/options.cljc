@@ -45,7 +45,8 @@
               :rotate-180 [{:type :keyboard :button "KeyV"}]
               :hard-drop  [{:type :keyboard :button "Space"}]
               :hold       [{:type :keyboard :button "KeyC"}
-                           {:type :keyboard :button "ShiftLeft"}]}})
+                           {:type :keyboard :button "ShiftLeft"}]}
+   :piece-style "b11"})
 
 (defn slotify-controls [controls]
   (reduce-kv

@@ -6,11 +6,12 @@
             [tetris.core.ruleset.modern :refer [make-modern-ruleset]]
             [tetris.core.tick :as tick]
             [tetris.input.keyboard :as keyboard]
-            [tetris.ui.menu :as menu]
-            [tetris.ui.menu-overlay :refer [menu-overlay]]
+            [tetris.options-store :as options-store]
             [tetris.scenes.render.pixi-app :as app]
             [tetris.scenes.replay :as replay]
-            [tetris.screens.screen-navigator :as screen-navigator]))
+            [tetris.screens.screen-navigator :as screen-navigator]
+            [tetris.ui.menu :as menu]
+            [tetris.ui.menu-overlay :refer [menu-overlay]]))
 
 (defstyles gameplay-menu-class []
   {:background "rgba(0, 0, 0, 0.6)"
@@ -38,7 +39,8 @@
                                 :marathon (make-modern-ruleset seed 1)
                                 :classic (make-classic-ruleset seed 0))
                               options))]
-      (await (replay/start (:pixi-app @state) game-state replay-events)))))
+      (await (replay/start (:pixi-app @state) game-state
+                           (options-store/get-options :piece-style) replay-events)))))
 
 (declare make)
 

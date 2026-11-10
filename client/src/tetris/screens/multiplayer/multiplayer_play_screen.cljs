@@ -1,5 +1,6 @@
 (ns tetris.screens.multiplayer.multiplayer-play-screen
   (:require [reagent.core :as r]
+            [tetris.assets :as assets]
             [tetris.online.api :as api]
             [tetris.online.room-api :as room-api]
             [tetris.online.ws-client :as ws-client]
@@ -22,10 +23,9 @@
     :game-started
     (fn [{:keys [room users]}]
       (swap! (:state this) assoc :loading? false)
-      (multiplayer/start! {:game (merge (select-keys this [:piece-style])
-                                        (-> (:game-settings room)
-                                            (update :mode keyword)
-                                            (update :rs keyword)))
+      (multiplayer/start! {:game (-> (:game-settings room)
+                                     (update :mode keyword)
+                                     (update :rs keyword))
                            :local-uid (:id (api/local-user))
                            :players (mapv #(room-manager/player-info % users) (:players room))})))
   (ws-client/subscribe! :closed #(screen-navigator/pop-screen!))
@@ -38,10 +38,11 @@
   (ws-client/subscribe! :player-joined
                         (fn [{:keys [room player]}]
                           (multiplayer/on-player-event room player :player-joined)))
-  (.then (multiplayer/load! (:piece-style this))
+  (.then (multiplayer/load! (:piece-styles this))
          #(room-api/request-start-game
             {:seed (int (* (rand) 100000))
-             :handling (options-store/get-options :handling)})))
+             :handling (options-store/get-options :handling)
+             :piece-style (options-store/get-options :piece-style)})))
 
 (defn- on-keydown [_ event]
   (when (= (.-code event) "Escape")
@@ -56,6 +57,6 @@
                  (ws-client/unsubscribe! :all)
                  (multiplayer/destroy!))
    :on-keydown on-keydown
-   :piece-style "b11" 
+   :piece-styles (assets/get-piece-styles) 
    :state (r/atom {:loading? true})})
 

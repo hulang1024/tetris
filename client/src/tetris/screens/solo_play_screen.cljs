@@ -9,13 +9,14 @@
             [tetris.core.tick :as tick]
             [tetris.input.keyboard :as keyboard]
             [tetris.options-store :as options-store]
-            [tetris.ui.menu :as menu]
-            [tetris.ui.menu-overlay :refer [menu-overlay]]
-            [tetris.scenes.solo :as solo]
             [tetris.scenes.render.pixi-app :as app]
+            [tetris.scenes.solo :as solo]
+            [tetris.screens.controls-options-screen :as controls-options-screen]
+            [tetris.screens.gameplay-options-screen :as gameplay-options-screen]
             [tetris.screens.replay-screen :as replay-screen]
             [tetris.screens.screen-navigator :as screen-navigator]
-            [tetris.screens.controls-options-screen :as controls-options-screen]))
+            [tetris.ui.menu :as menu]
+            [tetris.ui.menu-overlay :refer [menu-overlay]]))
 
 (defstyles gameplay-menu-class []
   {:background "rgba(0, 0, 0, 0.6)"
@@ -43,7 +44,7 @@
                                 :marathon (make-modern-ruleset seed 1)
                                 :classic (make-classic-ruleset seed 0))
                               options))]
-      (await (solo/start (:pixi-app @state) game-state)))))
+      (await (solo/start (:pixi-app @state) game-state (options-store/get-options :piece-style))))))
 
 (declare make)
 
@@ -58,6 +59,7 @@
        (->> [(menu/item :start-over nil 1)
              (menu/item :continue-game nil 2)
              (menu/item :custom-controls nil 3)
+             (menu/item :custom-gameplay nil 3)
              (menu/item :replay nil 4)
              (menu/item :exit-game nil 5)]
             (filterv (if (= (:game-status @state) :game-over)
@@ -74,6 +76,7 @@
            :start-over (screen-navigator/replace-screen!
                          (make (get-in @state [:settings :mode])))
            :custom-controls (screen-navigator/push-screen! (controls-options-screen/make))
+           :custom-gameplay (screen-navigator/push-screen! (gameplay-options-screen/make true))
            :exit-game (screen-navigator/pop-screen!)
            :replay (screen-navigator/push-screen!
                      (replay-screen/make

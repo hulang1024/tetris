@@ -3,7 +3,7 @@
 
 (def ^:private storage-key "tetris")
 
-(def Category [:enum :handling :controls :username :password :auto-login-enabled])
+(def Category [:enum :handling :controls :piece-style :username :password :auto-login-enabled])
 
 (defn- read-options []
   (let [object (js/JSON.parse (js/localStorage.getItem storage-key))]
@@ -24,7 +24,7 @@
                   [:=> [:cat] Options]
                   [:=> [:cat Category] [:or Handling Controls :nil :string :boolean]]]}
   ([] (read-options))
-  ([category] (get (read-options) category)))
+  ([category] (get (read-options) category (get options/default-options category))))
 
 (defn save-options!
   {:malli/schema [:=> [:cat Category [:or Handling Controls :string :boolean]] Options]}

@@ -76,9 +76,9 @@
       (game-view/render! game-view game-state (:last-input replayer))
       (sound-effect/handle game-state))))
 
-(defn ^:async start [^js app game-state replay-events]
+(defn ^:async start [^js app game-state piece-style replay-events]
   (tap> (str "replay events\n" replay-events))
-  (let [options (merge game-state {:piece-style "b11"})]
+  (let [options (merge game-state {:piece-style piece-style})]
     (await (js/Promise.all [(assets/load-piece-styles (:piece-style options))
                             (audio/load-sounds :gameplay)]))
     (let [view (game-view/create options)]

@@ -57,8 +57,8 @@
       (game-view/render! game-view game-state input-state)
       (sound-effect/handle game-state))))
 
-(defn ^:async start [^js app game-state]
-  (let [options (merge game-state {:piece-style "b11"})]
+(defn ^:async start [^js app game-state piece-style]
+  (let [options (merge game-state {:piece-style piece-style})]
     (await (js/Promise.all [(assets/load-piece-styles (:piece-style options))
                             (audio/load-sounds :gameplay)]))
     (let [view (game-view/create options)]

@@ -30,14 +30,14 @@
                        :classic (make-classic-ruleset (:seed game-config) speed-level))
                      {:rotation-system rs}
                      (:handling game-config)))]
-        {:id id
-         :name (:username player)
-         :game-state game-state
-         :game-status :playing
-         :game-view nil
-         :network-replayer (when (not= local-uid id)
-                             (network-replay/make-replayer id))
-         :input-state nil}))
+        (merge player
+               {:name (:username player)
+                :game-state game-state
+                :game-status :playing
+                :game-view nil
+                :network-replayer (when (not= local-uid id)
+                                    (network-replay/make-replayer id))
+                :input-state nil})))
     players))
 
 (defn- update-player-games [players]
@@ -70,6 +70,12 @@
     players
     players))
 
+(defn send-local-player-inputs! [{:keys [uid input-frames] :as buffer} n]
+  (if (>= (count input-frames) n)
+    (do (ws-client/broadcast-input-frames! uid input-frames)
+        (assoc buffer :input-frames []))
+    buffer))
+
 (defonce ^:private scene-state (atom {:playing? false}))
 
 (defn- tick []
@@ -93,7 +99,7 @@
           playing-player-cnt (count (filter #(= (:game-status %) :playing) (vals players)))]
       (when playing?
         (when (and local-playing? (> playing-player-cnt 1))
-          (let [buffer (network-replay/send! network-buffer 10)]
+          (let [buffer (send-local-player-inputs! network-buffer 10)]
             (swap! scene-state assoc :network-buffer buffer)))
         (doseq [[uid {:keys [game-status game-state input-state game-view]}] players
                 :let [game-state (assoc game-state :status game-status)]]
@@ -108,15 +114,15 @@
    [:game-config
     [:map
      [:seed some?]
-     [:handling [:or options/Handling [:map]]]]]])
+     [:handling [:or options/Handling [:map]]]
+     [:piece-style :string]]]])
 
 (def Game
   [:map
    [:mode [:enum :classic :modern]]
    [:speed-level :int]
    [:rs rs/RotationSystem]
-   [:preview-count :int]
-   [:piece-style :string]])
+   [:preview-count :int]])
 
 (def StartOptions
   [:map
@@ -125,8 +131,8 @@
    [:local-uid :int]])
 
 (defn ^:async load!
-  [piece-style]
-  (await (js/Promise.all [(assets/load-piece-styles piece-style)
+  [piece-styles]
+  (await (js/Promise.all [(assets/load-piece-styles piece-styles)
                           (audio/load-sounds :gameplay)]))
   (swap! scene-state assoc :app (await (app/init)))
   (keyboard/init))
@@ -148,7 +154,9 @@
              (reduce
                (fn [m [view-i player]]
                  (let [game-view (game-view/create
-                                   (assoc game :player-name (:name player)))
+                                   (assoc game
+                                          :player-name (:name player)
+                                          :piece-style (get-in player [:game-config :piece-style])))
                        {:keys [container layout]} game-view
                        total-w (* (:width layout) (count players))
                        left (/ (- v-screen-width total-w) 2)]

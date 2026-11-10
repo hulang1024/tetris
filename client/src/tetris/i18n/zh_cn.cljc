@@ -11,6 +11,7 @@
           :controls-options "控制"
           :custom-controls "控制设置"
           :gameplay-options "游戏"
+          :custom-gameplay "游戏设置"
           :audio-options "音频"
           :start-over "重新开始"
           :back-to-main-menu "返回到主菜单"
