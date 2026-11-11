@@ -46,6 +46,7 @@
               :hard-drop  [{:type :keyboard :button "Space"}]
               :hold       [{:type :keyboard :button "KeyC"}
                            {:type :keyboard :button "ShiftLeft"}]}
+   :auto-login-enabled true
    :piece-style "b11"})
 
 (defn slotify-controls [controls]

@@ -74,11 +74,7 @@
                               :auto-login-enabled (options-store/get-options :auto-login-enabled) 
                               :mode :login
                               :message nil})
-               set-message (fn [s] (swap! state assoc :message s))
-               keydown-event-listener (fn [event]
-                                        (when (= (.-code event) "Escape")
-                                          (on-done)))]
-    (js/document.addEventListener "keydown" keydown-event-listener)
+               set-message #(swap! state assoc :message %)]
     (let [{:keys [username password auto-login-enabled mode message]} @state]
       [:div {:class (logic-overlay-class)}
        [:span {:class (title-class)}
@@ -130,7 +126,5 @@
                 :on-click #(if (= mode :login)
                              (on-done)
                              (swap! state assoc :mode :login))}
-               (i18n/text :cancel))])
-    (finally
-      (js/document.removeEventListener "keydown" keydown-event-listener))))
+               (i18n/text :cancel))])))
 

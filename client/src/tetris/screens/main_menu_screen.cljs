@@ -79,9 +79,18 @@
      :menu-item-hover-class menu-item-hover-class}]
    (tip-buttons-overlay)])
 
+(defn- on-keydown [{:keys [state]} event]
+  (when (= (.-code event) "Escape")
+    (swap! state assoc
+           :login-opened false
+           :room-create-opened false
+           :room-join-opened false))
+  true)
+
 (defn make []
   {:name :main-menu
    :build build
+   :on-keydown on-keydown
    :state (r/atom
             {:menu
              (r/atom

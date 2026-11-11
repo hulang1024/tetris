@@ -63,7 +63,10 @@
     (.preventDefault event))
   (when-let [screen (active-screen)]
     (let [handled? (trigger-callback screen :on-keydown event)]
-      (when (and (not handled?) (= (.-code event) "Escape"))
+      (when (and (not handled?)
+                 (= (.-code event) "Escape")
+                 (not (.-repeat event))
+                 (= (.. event -target -tagName) "BODY"))
         (audio/play :screen-back)
         (pop-screen!)))))
 

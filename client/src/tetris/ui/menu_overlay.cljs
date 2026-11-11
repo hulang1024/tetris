@@ -64,7 +64,8 @@
   (r/with-let [state (or state (r/atom (menu/make menu-items default-hover)))
                update-state #(reset! state %)
                keydown-event-listener (fn [event]
-                                        (when-not (.-repeat event) 
+                                        (when (and (not (.-repeat event))
+                                                   (= (.. event -target -tagName) "BODY")) 
                                           (handle-keydown
                                             @state
                                             event
