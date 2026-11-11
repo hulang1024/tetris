@@ -14,7 +14,7 @@
    :rotation-system :nrs-nes
    :piece-generator (pgen-hr/make seed 1 2)
    :scoring (scoring-nes/make)
-   :speed-level-system (speedlv-nes/make)
+   :speed-level-system (speedlv-nes/make 0)
    :preview-count 1
    :ghost-enabled? false
    :initial-hold-enabled? false
