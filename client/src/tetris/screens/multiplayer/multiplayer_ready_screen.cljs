@@ -95,7 +95,8 @@
   (when (.-ctrlKey event)
     (case (.-code event)
       "KeyO" (screen-navigator/push-screen! (controls-options-screen/make))
-      "KeyG" (screen-navigator/push-screen! (gameplay-options-screen/make)))))
+      "KeyG" (screen-navigator/push-screen! (gameplay-options-screen/make))
+      nil)))
 
 (defn make [{:keys [room users]}]
   {:name :multiplayer-ready
