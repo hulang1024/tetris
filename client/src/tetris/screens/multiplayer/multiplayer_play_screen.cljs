@@ -40,7 +40,7 @@
 
 (defn- on-entering [screen] 
   (ws-client/subscribe!
-    :game-started
+    :multiplayer :game-started
     (fn [{:keys [room users]}]
       (swap! (:state screen) assoc :loading? false :room room :users users)
       (let [players (mapv #(room-manager/player-info % users) (:players room))]
@@ -51,9 +51,9 @@
            :local-uid (:id (api/local-user))
            :players (filterv #(= (:role %) :player) players)
            :spectators (filterv #(= (:role %) :spectator) players)}))))
-  (ws-client/subscribe! :disconnectd screen-navigator/pop-screen!)
+  (ws-client/subscribe! :multiplayer :disconnectd screen-navigator/pop-screen!)
   (ws-client/subscribe!
-    :player-game-quitted
+    :multiplayer  :player-game-quitted
     (fn [{:keys [room player]}]
       (swap! (:state screen) assoc :room room)
       (when (empty? (filter #(and (= (keyword (:role %)) :player)
@@ -62,12 +62,12 @@
         (screen-navigator/pop-screen!))
       (multiplayer/on-player-event room player :player-game-quitted)))
   (ws-client/subscribe!
-    :player-left
+    :multiplayer :player-left
     (fn [{:keys [room player]}]
       (swap! (:state screen) assoc :room room)
       (multiplayer/on-player-event room player :player-left)))
   (ws-client/subscribe!
-    :player-joined
+    :multiplayer :player-joined
     (fn [{:keys [room player]}]
       (multiplayer/on-player-event room player :player-joined)))
   (.then (multiplayer/load! (:piece-styles screen))
@@ -86,7 +86,7 @@
    :build build
    :on-entering on-entering
    :on-exiting (fn []
-                 (ws-client/unsubscribe! :all)
+                 (ws-client/unsubscribe! :multiplayer :all)
                  (multiplayer/destroy!)
                  (room-api/quit-game))
    :on-keydown on-keydown

@@ -49,15 +49,19 @@
 
 (defn- ^:async handle-login [{:keys [username password auto-login-enabled]} on-success messager]
   (let [resp (await (api/login! username password))]
-    (if (= (:code resp) :ok)
+    (cond
+      (= (:status resp) 503) (messager "无法连接到服务器")
+
+      (= (:code resp) :ok)
       (do (options-store/save-options! :username username)
           (when auto-login-enabled
             (options-store/save-options! :password password))
           (on-success))
-      (messager
-        (if (= (:code resp) :error)
-          (i18n/format [:login-message :format-error] {:u 3 :p 6})
-          (i18n/text [:login-message :failed]))))))
+
+      :else (messager
+              (if (= (:code resp) :error)
+                (i18n/format [:login-message :format-error] {:u 3 :p 6})
+                (i18n/text [:login-message :failed]))))))
 
 (defn- ^:async handle-register [{:keys [username password]} on-success messager]
   (let [resp (await (api/register! username password))]

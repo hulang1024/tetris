@@ -62,7 +62,7 @@
      (api-route :post "/logout" user-handler/logout nil)
      (api-route :get "/whoami" user-handler/whoami nil)
      (api-route :get "/ws" ws-interceptor nil)
-     (api-route :get "/online-stats" user-handler/get-online-stats nil)
+     (api-route :get "/online-stats" user-handler/get-online-stats nil {:auth-required? false})
      (api-route :get "/room/search-rooms" room-handler/search-rooms room-handler/SearchRoomRequest)
      (api-route :post "/room/create-room" room-handler/create-room room-handler/CreateRoomRequest)
      (api-route :post "/room/join-room" room-handler/join-room room-handler/JoinRoomRequest)

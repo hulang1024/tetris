@@ -4,6 +4,7 @@
 
 (defonce ^:private state
   (r/atom {:state :offline
+           :api-online? false
            :conn nil
            :event-queue []
            :event-handlers {:connected {}
@@ -19,11 +20,12 @@
 (defn- dispatch-event! [event]
   (let [handlers (get-in @state [:event-handlers (:type event)])]
     (if (seq handlers)
-      (doseq [[_k handler] handlers]
+      (doseq [[_group-key handler] handlers]
         (handler (:data event)))
       (swap! state update :event-queue conj event))))
 
 (defn connect! []
+  (println "connecting...")
   (let [ws (js/WebSocket. (str "ws://" js/location.host "/api/ws"))]
     (swap! state assoc
            :conn ws
@@ -31,29 +33,37 @@
     (set! (.-binaryType ws) "arraybuffer")
     (.addEventListener ws "open"
                        (fn []
+                         (println "connected")
                          (swap! state assoc :state :online)
                          (dispatch-event! {:type :connected :data nil})))
     (.addEventListener ws "close"
                        (fn []
+                         (println "disconnected")
                          (swap! state assoc :state :offline)
-                         (dispatch-event! {:type :disconnectd :data nil})))
+                         (dispatch-event! {:type :disconnectd :data nil})
+                         (when (:api-online? @state)
+                           (js/setTimeout connect! 3000))))
     (.addEventListener ws "message"
                        (fn [event]
                          (dispatch-event! (codec/->server-event (.-data event)))))))
 
 (defn on-api-state-change [api-state]
-  (cond
-    (and (= api-state :online) (= (:state @state) :offline)) (connect!)
-    (= api-state :offline) (when (:conn @state) (.close (:conn @state)))))
+  (swap! state assoc :api-online? (= api-state :online))
+  (if (= api-state :online) 
+    (when (= (:state @state) :offline)
+      (connect!))
+    (when (and (some? (:conn @state))
+               (not= (.-readyState (:conn @state)) js/WebSocket.OPEN))
+      (.close (:conn @state)))))
 
 (defn subscribe!
   ([event-type handler]
-   (subscribe! event-type event-type handler false))
-  ([event-type handler take-queue?]
-   (subscribe! event-type event-type handler take-queue?))
-  ([event-type handler-key handler take-queue?]
+   (subscribe! :default event-type handler))
+  ([group-key event-type handler]
+   (subscribe! group-key event-type handler false))
+  ([group-key event-type handler take-queue?]
    {:pre [(keyword? event-type) (fn? handler)]}
-   (swap! state assoc-in [:event-handlers event-type handler-key] handler)
+   (swap! state assoc-in [:event-handlers event-type group-key] handler)
    (when take-queue?
      (let [events (filter #(= (:type %) event-type) (:event-queue @state))]
        (run! dispatch-event! events)))
@@ -62,12 +72,16 @@
 
 (defn unsubscribe!
   ([event-type]
-   (unsubscribe! event-type event-type))
-  ([event-type handler-key]
+   (unsubscribe! :default event-type))
+  ([group-key event-type]
    (if (= event-type :all)
-     (doseq [[event-type _] (:event-handlers @state)]
-       (swap! state assoc-in [:event-handlers event-type] {}))
-     (swap! state update-in [:event-handlers event-type] dissoc handler-key))))
+     (swap! state update :event-handlers
+            (fn [event-handlers]
+              (reduce-kv (fn [m event-type handlers]
+                           (assoc m event-type (dissoc handlers group-key)))
+                         {}
+                         event-handlers) {}))
+     (swap! state update-in [:event-handlers event-type] dissoc group-key))))
 
 (defn broadcast-input-frames! [uid input-frames]
   (when (= (.-readyState (:conn @state)) js/WebSocket.OPEN)

@@ -116,7 +116,12 @@
     {:name :main-menu
      :build build
      :on-entering (fn [screen]
-                    (ws-client/subscribe! :connected #(load-online-stats screen))
+                    (ws-client/subscribe!
+                      :connected
+                      (fn []
+                        (load-online-stats screen)
+                        (swap! (:state screen) assoc :login-opened false)))
+                    (ws-client/subscribe! :disconnected stop-poll-timer)
                     (start-poll-timer screen))
      :on-suspending stop-poll-timer
      :on-resuming start-poll-timer

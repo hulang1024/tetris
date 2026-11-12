@@ -20,6 +20,16 @@
 
 (defn local-user [] (:user @state))
 
+(declare try-auto-login)
+
+(defn- handle-response [resolve [ok? resp]]
+  (if ok?
+    (resolve resp)
+    (when (>= (:status resp) 401)
+      (swap! state assoc :state :offline :user nil)
+      (js/setTimeout try-auto-login 3000)
+      (resolve resp))))
+
 (defn- ^:async request [path method params]
   (let [resp
         (await (js/Promise.
@@ -29,7 +39,7 @@
                       :uri (str "/api" path)
                       :params params
                       :headers {"Content-Type" "application/json"}
-                      :handler (comp resolve second)
+                      :handler #(handle-response resolve %)
                       :format (json-request-format)
                       :response-format (ajax.core/json-response-format {:keywords? true})
                       :error-handler reject}))))]
@@ -55,12 +65,12 @@
 (defn get-online-stats []
   (get! "/online-stats" nil))
 
-(defn- ^:async auto-login []
-  (when (options-store/get-options :auto-login-enabled)
-    (let [resp (await (login! (options-store/get-options :username)
-                              (options-store/get-options :password)))]
-      (when (not= (:code resp) :ok)
-        (options-store/save-options! :auto-login-enabled false)))))
+(defn- ^:async try-auto-login []
+  (let [{:keys [auto-login-enabled username password]} (options-store/get-options)]
+    (when (and auto-login-enabled username password)
+      (let [resp (await (login! username password))]
+        (when (and (some? (:code resp)) (not= (:code resp) :ok))
+          (options-store/save-options! :auto-login-enabled false))))))
 
 (defn ^:async load-session-user! []
   (let [resp (await (get! "/whoami" nil))]
@@ -68,4 +78,4 @@
       (swap! state assoc
              :state :online
              :user (get-in resp [:data :user]))
-      (auto-login))))
+      (try-auto-login))))

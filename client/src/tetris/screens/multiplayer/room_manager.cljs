@@ -37,7 +37,7 @@
 
 (defn listen-events [state {:keys [on-player-joined on-player-left on-player-ready on-game-entered]}]
   (ws-client/subscribe!
-    :player-joined
+    :room :player-joined
     (fn [{:keys [room player user]}]
       (update-room! state room)
       (swap! state update :users conj user)
@@ -45,35 +45,35 @@
     true)
 
   (ws-client/subscribe!
-    :player-left
+    :room :player-left
     (fn [{:keys [room player]}]
       (update-room! state room)
       (on-player-left (:room @state) (player-info player(:users @state)))))
 
   (ws-client/subscribe!
-    :player-ready
+    :room :player-ready
     (fn [{:keys [room player]}]
       (update-room! state room)
       (on-player-ready (:room @state) (player-info player (:users @state)))))
 
   (ws-client/subscribe!
-    :player-changed
+    :room :player-changed
     (fn [{:keys [room]}] (update-room! state room)))
 
   (ws-client/subscribe!
-    :player-game-quitted
+    :room :player-game-quitted
     (fn [{:keys [room]}] (update-room! state room)))
 
   (ws-client/subscribe!
-    :room-changed
+    :room :room-changed
     (fn [{:keys [room]}] (update-room! state room)))
 
   (ws-client/subscribe!
-    :game-entered
+    :room :game-entered
     (fn [{:keys [room]}]
       (update-room! state room)
       (on-game-entered (:room @state))))
   state)
 
 (defn unlisten-events []
-  (ws-client/unsubscribe! :all))
+  (ws-client/unsubscribe! :room :all))

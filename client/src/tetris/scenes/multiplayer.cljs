@@ -144,7 +144,7 @@
   [{:keys [game players spectators local-uid] :as options}]
   (tap> ["start game" game players])
   (ws-client/subscribe!
-    :player-inputs
+    :multiplayer :player-inputs
     (fn [{:keys [uid input-frames]}]
       (swap! scene-state update-in [:players uid :network-replayer]
              (fn [replayer]
