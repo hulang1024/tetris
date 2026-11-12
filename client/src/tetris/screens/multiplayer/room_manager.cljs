@@ -4,7 +4,12 @@
 (defn player-info [player users]
   (when player
     (let [user (first (filter #(= (:id %) (:id player)) users))]
-      (merge user (update player :state keyword)))))
+      (merge user (-> player
+                      (update :state keyword)
+                      (update :role keyword))))))
+
+(defn local-player [{:keys [room users]} local-uid]
+  (player-info (first (filter #(= local-uid (:id %)) (:players room))) users))
 
 (defn slot-players [{:keys [room] :as manager}]
   (mapv (fn [slot]
@@ -52,7 +57,7 @@
       (on-player-ready (:room @state) (player-info player (:users @state)))))
 
   (ws-client/subscribe!
-    :player-slot-changed
+    :player-changed
     (fn [{:keys [room]}] (update-room! state room)))
 
   (ws-client/subscribe!

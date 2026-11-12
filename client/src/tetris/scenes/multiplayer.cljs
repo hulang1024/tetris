@@ -94,11 +94,12 @@
                                (network-replay/append-input-frame
                                  buffer [(:frame local-game) pressed-buttons])))))
                scene)))
-    (let [{:keys [playing? players local-uid network-buffer]} @scene-state
+    (let [{:keys [playing? players spectators local-uid network-buffer]} @scene-state
           local-playing? (= (get-in players [local-uid :game-status]) :playing)
-          playing-player-cnt (count (filter #(= (:game-status %) :playing) (vals players)))]
+          playing-player-cnt (count (filter #(= (:game-status %) :playing) (vals players)))
+          spectator-cnt (count spectators)]
       (when playing?
-        (when (and local-playing? (> playing-player-cnt 1))
+        (when (and local-playing? (> (+ playing-player-cnt spectator-cnt) 1))
           (let [buffer (send-local-player-inputs! network-buffer 10)]
             (swap! scene-state assoc :network-buffer buffer)))
         (doseq [[uid {:keys [game-status game-state input-state game-view]}] players
@@ -128,6 +129,7 @@
   [:map
    [:game Game]
    [:players [:vector Player]]
+   [:spectators [:vector Player]]
    [:local-uid :int]])
 
 (defn ^:async load!
@@ -139,7 +141,7 @@
 
 (defn ^:async start!
   {:malli/schema [:=> [:cat StartOptions] :any]}
-  [{:keys [game players local-uid] :as options}]
+  [{:keys [game players spectators local-uid] :as options}]
   (tap> ["start game" game players])
   (ws-client/subscribe!
     :player-inputs
@@ -168,6 +170,7 @@
     (swap! scene-state assoc
            :playing? true
            :players scene-players
+           :spectators spectators
            :local-uid local-uid
            :network-buffer (network-replay/make-input-buffer local-uid))
     (.. app -ticker (add tick))
@@ -178,7 +181,10 @@
     (swap! scene-state assoc-in [:players (:id player) :game-status]
            ({:player-game-quitted :quitted
              :player-left :left-room
-             :player-joined :quitted} event-type))))
+             :player-joined :quitted} event-type)))
+  (when (contains? #{:player-game-quitted :player-left} event-type)
+    (swap! scene-state update :spectators
+           (fn [spectators] (filterv #(not= (:id %) (:id player)) spectators)))))
 
 (defn destroy! []
   (when-let [app (:app @scene-state)]

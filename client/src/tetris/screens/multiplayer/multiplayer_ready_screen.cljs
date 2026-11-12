@@ -40,7 +40,7 @@
 (defn- handle-room-settings-change [state room]
   (let [settings (select-keys room [:public :game-settings])]
     (swap! state merge settings)
-    (room-api/update-room-settings settings)))
+    (room-api/change-room-settings settings)))
 
 (defn listen-events [state]
   (room-manager/listen-events
@@ -63,6 +63,7 @@
   (let [{:keys [room]} @state
         players (room-manager/slot-players @state)
         local-user (api/local-user)
+        local-player (room-manager/local-player @state (:id local-user))
         host? (= (:host room) (:id local-user))]
     [:div
      [:div {:class (screen-intro)} "多人游戏房间"]
@@ -76,7 +77,9 @@
                :on-click handle-leave-room}
               (i18n/text [:multiplayer :leave]))
       (start-button local-user room players)]
-     (tip-buttons-overlay ["Ctrl-O" "控制设置"]
+     (tip-buttons-overlay ["Ctrl-S"
+                           (str "切换为" (if (= (:role local-player) :player) "观众" "玩家"))]
+                          ["Ctrl-O" "控制设置"]
                           ["Ctrl-G" "游戏设置"])]))
 
 (defn- on-entering [{:keys [state]}]
@@ -91,11 +94,13 @@
            (reset! (:state screen) (room-manager/make room users))
            (listen-events (:state screen)))))
 
-(defn- on-keydown [_ event]
+(defn- on-keydown [{:keys [state]} event]
   (when (.-ctrlKey event)
     (case (.-code event)
       "KeyO" (screen-navigator/push-screen! (controls-options-screen/make))
       "KeyG" (screen-navigator/push-screen! (gameplay-options-screen/make))
+      "KeyS" (let [local-player (room-manager/local-player @state (:id (api/local-user)))]
+               (room-api/change-role (if (= (:role local-player) :player) :spectator :player)))
       nil)))
 
 (defn make [{:keys [room users]}]

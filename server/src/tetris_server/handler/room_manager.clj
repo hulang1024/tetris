@@ -55,7 +55,13 @@
       (swap! manager update :rooms put-room room)
       room)))
 
-(defn change-settings! [manager room-id settings]
+(defn change-role! [manager room-id uid role]
+  (when-let [room (get-room manager room-id)]
+    (let [room (room/change-role room uid role)]
+      (swap! manager update :rooms put-room room)
+      room)))
+
+(defn change-room-settings! [manager room-id settings]
   (when-let [room (get-room manager room-id)]
     (let [room (room/change-settings room settings)]
       (swap! manager update :rooms put-room room)

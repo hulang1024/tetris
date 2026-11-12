@@ -5,6 +5,7 @@
   [:map
    [:id :int]
    [:state [:enum :not-ready :readied :inprogress]]
+   [:role [:enum :player :spectator]]
    [:game-config [:map]]])
 
 (def RoomId :string)
@@ -33,7 +34,10 @@
                    (range 0 (:players-max room))))))
 
 (defn- make-player [uid room]
-  {:id uid :state :not-ready :slot (find-empty-slot room)})
+  {:id uid :state
+   :not-ready
+   :slot (find-empty-slot room)
+   :role :player})
 
 (defn make-room
   {:malli/schema [:=> [:cat CreateRoom] Room]}
@@ -79,6 +83,9 @@
     (update-player room uid #(assoc % :slot slot))
     room))
 
+(defn change-role [room uid role]
+  (update-player room uid #(assoc % :role role)))
+
 (defn change-settings [room settings]
   (merge room settings))
 
@@ -99,6 +106,7 @@
 
 (defn enter-game [room force?]
   (if (and (>= (count (:players room)) (:players-min room))
+           (seq (filter #(= (:role %) :player) (:players room)))
            (or force? (every-players? room :readied)))
     (assoc room :state :inprogress)
     room))

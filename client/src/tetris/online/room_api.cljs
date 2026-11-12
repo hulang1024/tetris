@@ -11,8 +11,11 @@
 (defn change-slot [slot]
   (api/post "/room/change-slot" {:slot slot}))
 
-(defn update-room-settings [settings]
-  (api/post "/room/change-settings" settings))
+(defn change-role [role]
+  (api/post "/room/change-role" {:role role}))
+
+(defn change-room-settings [settings]
+  (api/post "/room/change-room-settings" settings))
 
 (defn enter-game [force?]
   (api/post "/room/enter-game" {:force-start force?}))

@@ -50,7 +50,7 @@
       [:span {:class "label"} (i18n/text [:create-room :players-max])]
       [:> Input {:type "number"
                  :min 2
-                 :max 4
+                 :max 8
                  :autoFocus true
                  :defaultValue (:players-max @state)
                  :on-value-change #(swap! state assoc :players-max (js/parseInt %1))}]]

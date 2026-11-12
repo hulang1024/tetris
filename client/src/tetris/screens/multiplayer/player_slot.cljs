@@ -29,6 +29,12 @@
                :color "#999"}
    "&:hover.empty" {:outline "1px solid #666"}})
 
+(defstyles role-class []
+  {:position "absolute"
+   :right "1rem"
+   :top "1rem"
+   :color "blueviolet"})
+
 (defstyles player-status-class []
   {:margin-top "1rem"
    :font-size "1rem"})
@@ -49,6 +55,8 @@
            :on-click #(handle-change-slot slot room player)}
      (when host?
        [:div {:class "is-host"} "房主"])
+     (when-not empty-slot?
+       [:div {:class (role-class)} (if (= (:role player) :spectator) "观众" "")])
      [:div {:class (when me? "me")} (:username player)]
      [:div {:class (player-status-class)
             :style {:display (if (= (:state player) :inprogress) "block" "none")}}

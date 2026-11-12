@@ -11,7 +11,7 @@
                             :player-joined {}
                             :player-left {}
                             :player-ready {}
-                            :player-slot-changed {}
+                            :player-changed {}
                             :player-game-quitted {}
                             :room-changed {}
                             :game-started {}}}))

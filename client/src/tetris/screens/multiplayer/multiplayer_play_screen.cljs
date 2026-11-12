@@ -1,5 +1,7 @@
 (ns tetris.screens.multiplayer.multiplayer-play-screen
-  (:require [reagent.core :as r]
+  (:require-macros [cljss.core])
+  (:require [cljss.core :as css :refer-macros [defstyles]]
+            [reagent.core :as r]
             [tetris.assets :as assets]
             [tetris.online.api :as api]
             [tetris.online.room-api :as room-api]
@@ -14,31 +16,61 @@
                  :font-size 24}}
    "加载中..."])
 
-(defn- build [{:keys [state]}]
-  [:div
-   (when (:loading? @state) [loading-overlay])])
+(defstyles spectators-class []
+  {:position "absolute"
+   :left "1rem"
+   :top "2rem"
+   :color "#fafafa"
+   :text-align "left"
+   ".title" {:margin-bottom "0.5rem"}})
 
-(defn- on-entering [this] 
+(defn- build [{:keys [state]}]
+  (let [{:keys [loading? room users]} @state
+        spectators (->> (:players room)
+                        (mapv #(room-manager/player-info % users))
+                        (filterv #(and (= (:role %) :spectator) (= (:state %) :inprogress))))]
+    [:div
+     (when loading? [loading-overlay])
+     (when (seq spectators)
+       [:div {:class (spectators-class)}
+        [:div {:class "title"}
+         (str "观众(" (count spectators) "):")]
+        (map (fn [spectator]
+               [:div (:username spectator)]) spectators)])]))
+
+(defn- on-entering [screen] 
   (ws-client/subscribe!
     :game-started
     (fn [{:keys [room users]}]
-      (swap! (:state this) assoc :loading? false)
-      (multiplayer/start! {:game (-> (:game-settings room)
-                                     (update :mode keyword)
-                                     (update :rs keyword))
-                           :local-uid (:id (api/local-user))
-                           :players (mapv #(room-manager/player-info % users) (:players room))})))
-  (ws-client/subscribe! :disconnectd #(screen-navigator/pop-screen!))
-  (ws-client/subscribe! :player-game-quitted
-                        (fn [{:keys [room player]}]
-                          (multiplayer/on-player-event room player :player-game-quitted)))
-  (ws-client/subscribe! :player-left
-                        (fn [{:keys [room player]}]
-                          (multiplayer/on-player-event room player :player-left)))
-  (ws-client/subscribe! :player-joined
-                        (fn [{:keys [room player]}]
-                          (multiplayer/on-player-event room player :player-joined)))
-  (.then (multiplayer/load! (:piece-styles this))
+      (swap! (:state screen) assoc :loading? false :room room :users users)
+      (let [players (mapv #(room-manager/player-info % users) (:players room))]
+        (multiplayer/start!
+          {:game (-> (:game-settings room)
+                     (update :mode keyword)
+                     (update :rs keyword))
+           :local-uid (:id (api/local-user))
+           :players (filterv #(= (:role %) :player) players)
+           :spectators (filterv #(= (:role %) :spectator) players)}))))
+  (ws-client/subscribe! :disconnectd screen-navigator/pop-screen!)
+  (ws-client/subscribe!
+    :player-game-quitted
+    (fn [{:keys [room player]}]
+      (swap! (:state screen) assoc :room room)
+      (when (empty? (filter #(and (= (keyword (:role %)) :player)
+                                  (= (keyword (:state %)) :inprogress))
+                            (:players room)))
+        (screen-navigator/pop-screen!))
+      (multiplayer/on-player-event room player :player-game-quitted)))
+  (ws-client/subscribe!
+    :player-left
+    (fn [{:keys [room player]}]
+      (swap! (:state screen) assoc :room room)
+      (multiplayer/on-player-event room player :player-left)))
+  (ws-client/subscribe!
+    :player-joined
+    (fn [{:keys [room player]}]
+      (multiplayer/on-player-event room player :player-joined)))
+  (.then (multiplayer/load! (:piece-styles screen))
          #(room-api/request-start-game
             {:seed (int (* (rand) 100000))
              :handling (options-store/get-options :handling)
@@ -46,17 +78,18 @@
 
 (defn- on-keydown [_ event]
   (when (= (.-code event) "Escape")
-    (.then (room-api/quit-game) #(screen-navigator/pop-screen!)))
+    (screen-navigator/pop-screen!))
   true)
 
-(defn make [_room]
+(defn make [room]
   {:name :multiplayer-play
    :build build
    :on-entering on-entering
    :on-exiting (fn []
                  (ws-client/unsubscribe! :all)
-                 (multiplayer/destroy!))
+                 (multiplayer/destroy!)
+                 (room-api/quit-game))
    :on-keydown on-keydown
    :piece-styles (assets/get-piece-styles) 
-   :state (r/atom {:loading? true})})
+   :state (r/atom {:loading? true :room room :users []})})
 
