@@ -12,7 +12,8 @@
    [:on-suspending {:optional true} fn?] ; 当push另一个screen
    [:on-resuming {:optional true} fn?]   ; 当pop后
    [:on-keydown {:optional true} fn?]    ; 当按键按下
-   [:on-update {:optional true} fn?]])   ; 动画帧更新
+   [:on-update {:optional true} fn?]     ; 动画帧更新
+   [:on-visible {:optional true} fn?]])  ; 窗口可见性改变
 
 (def ^:private state (r/atom {:stack []}))
 
@@ -70,3 +71,8 @@
         (audio/play :screen-back)
         (pop-screen!)))))
 
+
+
+(defn on-visibilitychange [_]
+  (when-let [screen (active-screen)]
+    (trigger-callback screen :on-visible (= js/document.visibilityState "visible"))))

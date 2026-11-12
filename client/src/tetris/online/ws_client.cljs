@@ -6,7 +6,8 @@
   (r/atom {:state :offline
            :conn nil
            :event-queue []
-           :event-handlers {:closed {}
+           :event-handlers {:connected {}
+                            :disconnected {}
                             :player-joined {}
                             :player-left {}
                             :player-ready {}
@@ -29,11 +30,13 @@
            :state :connecting)
     (set! (.-binaryType ws) "arraybuffer")
     (.addEventListener ws "open"
-                       (fn [] (swap! state assoc :state :online)))
+                       (fn []
+                         (swap! state assoc :state :online)
+                         (dispatch-event! {:type :connected :data nil})))
     (.addEventListener ws "close"
                        (fn []
                          (swap! state assoc :state :offline)
-                         (dispatch-event! {:type :closed :data nil})))
+                         (dispatch-event! {:type :disconnectd :data nil})))
     (.addEventListener ws "message"
                        (fn [event]
                          (dispatch-event! (codec/->server-event (.-data event)))))))

@@ -49,3 +49,5 @@
 (defn whoami [{:keys [datasource] {:keys [uid]} :session}]
   (api-response :ok {:user (user/get-user-info datasource {:id uid})}))
 
+(defn get-online-stats [_]
+  (api-response :ok {:online-count (ws/count-connected)}))

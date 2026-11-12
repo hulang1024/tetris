@@ -52,6 +52,9 @@
 (defn register! [username password]
   (post "/register" {:username username :password password}))
 
+(defn get-online-stats []
+  (get! "/online-stats" nil))
+
 (defn- ^:async auto-login []
   (when (options-store/get-options :auto-login-enabled)
     (let [resp (await (login! (options-store/get-options :username)

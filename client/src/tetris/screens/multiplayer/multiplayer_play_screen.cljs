@@ -28,7 +28,7 @@
                                      (update :rs keyword))
                            :local-uid (:id (api/local-user))
                            :players (mapv #(room-manager/player-info % users) (:players room))})))
-  (ws-client/subscribe! :closed #(screen-navigator/pop-screen!))
+  (ws-client/subscribe! :disconnectd #(screen-navigator/pop-screen!))
   (ws-client/subscribe! :player-game-quitted
                         (fn [{:keys [room player]}]
                           (multiplayer/on-player-event room player :player-game-quitted)))

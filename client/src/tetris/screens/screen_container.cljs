@@ -35,5 +35,7 @@
 
 (defn load []
   (.removeEventListener js/window "keydown" screen-navigator/on-keydown)
+  (.removeEventListener js/document "visibilitychange" screen-navigator/on-visibilitychange)
   (.addEventListener js/window "keydown" screen-navigator/on-keydown)
+  (.addEventListener js/document "visibilitychange" screen-navigator/on-visibilitychange)
   (rd/render @root [render-screen]))
