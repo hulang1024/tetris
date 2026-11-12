@@ -31,8 +31,7 @@
                      {:rotation-system rs}
                      (:handling game-config)))]
         (merge player
-               {:name (:username player)
-                :game-state game-state
+               {:game-state game-state
                 :game-status :playing
                 :game-view nil
                 :network-replayer (when (not= local-uid id)
@@ -43,9 +42,9 @@
 (defn- update-player-games [players]
   (reduce-kv
     (fn [players uid {:keys [input-state game-state game-status] :as player}]
-      (if input-state
-        (let [game-state (-> (assoc game-state :events [])
-                             (tick/step input-state))
+      (if (or (some? input-state) (= game-status :game-over))
+        (let [game-state (cond-> (assoc game-state :events [])
+                           (= game-status :playing) (tick/step input-state))
               game-status (if (game/find-event :game-over (:events game-state))
                             :game-over
                             game-status)]
@@ -81,31 +80,33 @@
 (defn- tick []
   (let [pressed-buttons (keyboard/key->buttons @keyboard/pressed-keys)
         local-input-state (keyboard/handle pressed-buttons)]
-    (swap! scene-state
-           (fn [scene]
-             (if (:playing? scene)
-               (let [{:keys [players local-uid]} @scene-state
-                     local-game (get-in players [local-uid :game-state])]
-                 (-> scene
-                     (update :players update-network-inputs local-input-state)
-                     (update :players update-player-games)
-                     (update :network-buffer
-                             (fn [buffer]
+    (when (:playing? @scene-state)
+      (swap! scene-state
+             (fn [{:keys [players local-uid] :as scene}]
+               (-> scene
+                   (update :players update-network-inputs local-input-state)
+                   (update :players update-player-games)
+                   (update :network-buffer
+                           (fn [buffer]
+                             (let [frame-no (get-in players [local-uid :game-state :frame])]
                                (network-replay/append-input-frame
-                                 buffer [(:frame local-game) pressed-buttons])))))
-               scene)))
-    (let [{:keys [playing? players spectators local-uid network-buffer]} @scene-state
-          local-playing? (= (get-in players [local-uid :game-status]) :playing)
-          playing-player-cnt (count (filter #(= (:game-status %) :playing) (vals players)))
-          spectator-cnt (count spectators)]
-      (when playing?
-        (when (and local-playing? (> (+ playing-player-cnt spectator-cnt) 1))
-          (let [buffer (send-local-player-inputs! network-buffer 10)]
+                                 buffer [frame-no pressed-buttons])))))))
+      (let [{:keys [players spectators local-uid network-buffer]} @scene-state
+            local-game (get-in players [local-uid :game-state])
+            local-game-over? (and local-game (game/find-event :game-over (:events local-game)))
+            local-playing? (= (get-in players [local-uid :game-status]) :playing)
+            playing-player-cnt (count (filter #(= (:game-status %) :playing) (vals players)))
+            spectator-cnt (count spectators)]
+        (when (and (some? local-game)
+                   (or (and local-playing? (> (+ playing-player-cnt spectator-cnt) 1))
+                       local-game-over?))
+          (let [buffer (send-local-player-inputs! network-buffer (if local-game-over? 0 10))]
             (swap! scene-state assoc :network-buffer buffer)))
         (doseq [[uid {:keys [game-status game-state input-state game-view]}] players
                 :let [game-state (assoc game-state :status game-status)]]
           (game-view/render! game-view game-state (or input-state input/empty-state))
-          (when (or (= local-uid uid) (= playing-player-cnt 1))
+          (when (or (= local-uid uid) (= playing-player-cnt 1)
+                    (game/find-event :game-over (:events game-state)))
             (sound-effect/handle game-state)))))))
 
 (def Player
@@ -157,7 +158,7 @@
                (fn [m [view-i player]]
                  (let [game-view (game-view/create
                                    (assoc game
-                                          :player-name (:name player)
+                                          :player-name (:username player)
                                           :piece-style (get-in player [:game-config :piece-style])))
                        {:keys [container layout]} game-view
                        total-w (* (:width layout) (count players))
