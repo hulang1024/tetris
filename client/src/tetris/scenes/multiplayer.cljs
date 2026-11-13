@@ -4,8 +4,6 @@
             [tetris.core.game :as game]
             [tetris.core.input :as input]
             [tetris.core.rs :as rs]
-            [tetris.core.ruleset.classic :refer [make-classic-ruleset]]
-            [tetris.core.ruleset.modern :refer [make-modern-ruleset]]
             [tetris.core.ruleset.rotation-nrs]
             [tetris.core.ruleset.rotation-prs]
             [tetris.core.ruleset.rotation-srs]
@@ -14,28 +12,23 @@
             [tetris.online.network-replay :as network-replay]
             [tetris.online.ws-client :as ws-client]
             [tetris.options :as options]
+            [tetris.scenes.game :refer [make-game-options]]
             [tetris.scenes.render.constants :refer [v-screen-width]]
             [tetris.scenes.render.gameplay.game-view :as game-view]
             [tetris.scenes.render.gameplay.sound-effect :as sound-effect]
             [tetris.scenes.render.pixi-app :as app]))
 
-(defn- make-players [{:keys [players local-uid]
-                      {:keys [mode speed-level rs]} :game}]
+(defn- make-players [{:keys [players local-uid game-config]}]
   (mapv
-    (fn [{:keys [id game-config] :as player}]
-      (let [game-state
-            (tick/initial-game
-              (merge (case mode
-                       :modern (make-modern-ruleset (:seed game-config) speed-level)
-                       :classic (make-classic-ruleset (:seed game-config) speed-level))
-                     {:rotation-system rs}
-                     (:handling game-config)))]
+    (fn [player]
+      (let [game-state (tick/initial-game
+                         (make-game-options (merge game-config (:game-config player)))) ]
         (merge player
                {:game-state game-state
                 :game-status :playing
                 :game-view nil
-                :network-replayer (when (not= local-uid id)
-                                    (network-replay/make-replayer id))
+                :network-replayer (when (not= local-uid (:id player))
+                                    (network-replay/make-replayer (:id player)))
                 :input-state nil})))
     players))
 
@@ -109,26 +102,28 @@
                     (game/find-event :game-over (:events game-state)))
             (sound-effect/handle game-state)))))))
 
-(def Player
+(def MPGamePlayerConfig
   [:map
-   [:id :int]
-   [:username :string]
-   [:game-config
-    [:map
-     [:seed some?]
-     [:handling [:or options/Handling [:map]]]
-     [:piece-style :string]]]])
+   [:seed some?]
+   [:handling [:or options/Handling [:map]]]
+   [:piece-style :string]])
 
-(def Game
+(def MPGameConfig
   [:map
    [:mode [:enum :classic :modern]]
    [:speed-level :int]
    [:rs rs/RotationSystem]
-   [:preview-count :int]])
+   [:preview-count :int]]) 
+
+(def Player
+  [:map
+   [:id :int]
+   [:username :string]
+   [:game-config MPGamePlayerConfig]])
 
 (def StartOptions
   [:map
-   [:game Game]
+   [:game-config MPGameConfig]
    [:players [:vector Player]]
    [:spectators [:vector Player]]
    [:local-uid :int]])
@@ -142,8 +137,8 @@
 
 (defn ^:async start!
   {:malli/schema [:=> [:cat StartOptions] :any]}
-  [{:keys [game players spectators local-uid] :as options}]
-  (tap> ["start game" game players])
+  [{:keys [game-config players spectators local-uid] :as options}]
+  (tap> ["start game" game-config players])
   (ws-client/subscribe!
     :multiplayer :player-inputs
     (fn [{:keys [uid input-frames]}]
@@ -157,7 +152,7 @@
              (reduce
                (fn [m [view-i player]]
                  (let [game-view (game-view/create
-                                   (assoc game
+                                   (assoc game-config
                                           :player-name (:username player)
                                           :piece-style (get-in player [:game-config :piece-style])))
                        {:keys [container layout]} game-view

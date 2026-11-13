@@ -13,8 +13,10 @@
 
 (defn get-match-room [manager _uid]
   (->> (vals (:rooms @manager))
-       (sort (fn [room] (if (= (:state room) :ready) 1 2)))
-       (filter (fn [room] (< (count (:players room)) (:players-max room))))
+       (filter (fn [room] (and (:public room)
+                               (< (count (:players room)) (:players-max room)))))
+       (sort #(count (:players %)))
+       (sort #(if (= (:state %) :ready) 0 1))
        (first)))
 
 (defn get-room [manager room-id]

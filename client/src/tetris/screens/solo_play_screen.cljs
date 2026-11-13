@@ -4,11 +4,10 @@
             [goog.style :as gstyle]
             [reagent.core :as r]
             [tetris.audio :as audio]
-            [tetris.core.ruleset.classic :refer [make-classic-ruleset]]
-            [tetris.core.ruleset.modern :refer [make-modern-ruleset]]
-            [tetris.core.tick :as tick]
             [tetris.input.keyboard :as keyboard]
             [tetris.options-store :as options-store]
+            [tetris.scenes.game :as game :refer [make-game-options
+                                                 mode->game-config]]
             [tetris.scenes.render.pixi-app :as app]
             [tetris.scenes.solo :as solo]
             [tetris.screens.controls-options-screen :as controls-options-screen]
@@ -34,17 +33,19 @@
                  :font-size 24}}
    "加载中..."])
 
+(defn update-game-config! [state]
+  (let [game-config (assoc (:game-config @state)
+                           :seed (game/random-seed)
+                           :handling (options-store/get-options :handling)
+                           :piece-style (options-store/get-options :piece-style))]
+    (swap! state assoc :game-config game-config)))
+
 (defn- ^:async load-scene [state]
-  (let [{{:keys [mode seed options]} :settings} @state]
-    (keyboard/init)
-    (swap! state assoc :pixi-app (await (app/init)))
-    (.appendChild js/document.body (.-canvas (:pixi-app @state)))
-    (let [game-state (tick/initial-game
-                       (merge (case mode
-                                :marathon (make-modern-ruleset seed 1)
-                                :classic (make-classic-ruleset seed 0))
-                              options))]
-      (await (solo/start (:pixi-app @state) game-state (options-store/get-options :piece-style))))))
+  (keyboard/init)
+  (swap! state assoc :pixi-app (await (app/init)))
+  (update-game-config! state)
+  (.appendChild js/document.body (.-canvas (:pixi-app @state)))
+  (await (solo/start (:pixi-app @state) (make-game-options (:game-config @state)))))
 
 (declare make)
 
@@ -73,15 +74,14 @@
          (case (:id item)
            :continue-game (do (swap! state assoc :game-status :playing)
                               (swap! (:scene-state @state) assoc :status :playing))
-           :start-over (screen-navigator/replace-screen!
-                         (make (get-in @state [:settings :mode])))
+           :start-over (screen-navigator/replace-screen! (make (update-game-config! state)))
            :custom-controls (screen-navigator/push-screen! (controls-options-screen/make))
            :custom-gameplay (screen-navigator/push-screen! (gameplay-options-screen/make true))
            :exit-game (screen-navigator/pop-screen!)
            :replay (screen-navigator/push-screen!
-                     (replay-screen/make
-                       (assoc (:settings @state)
-                              :replay-events (:replay-recorder @(:scene-state @state)))))
+                     (replay-screen/make 
+                       (:game-config @state)
+                       (:replay-recorder @(:scene-state @state))))
            nil))
        :menu-class gameplay-menu-class
        :menu-item-class menu-item-class
@@ -90,22 +90,21 @@
      :else nil)])
 
 (defn- on-entering [{:keys [state]}] 
-  (when (contains? #{:marathon :classic} (get-in @state [:settings :mode]))
-    (let [scene-state-promise (load-scene state)]
-      (.then scene-state-promise
-             (fn [scene-state]
-               (swap! state assoc
-                      :loading? false
-                      :scene-state scene-state)
-               (add-watch
-                 scene-state
-                 :sync
-                 (fn [_key _ref old new]
-                   (let [listen-keys [:status]
-                         old (select-keys old listen-keys)
-                         new (select-keys new listen-keys)]
-                     (when (not= old new)
-                       (swap! state assoc :game-status (:status new)))))))))))
+  (let [scene-state-promise (load-scene state)]
+    (.then scene-state-promise
+           (fn [scene-state]
+             (swap! state assoc
+                    :loading? false
+                    :scene-state scene-state)
+             (add-watch
+               scene-state
+               :sync
+               (fn [_key _ref old new]
+                 (let [listen-keys [:status]
+                       old (select-keys old listen-keys)
+                       new (select-keys new listen-keys)]
+                   (when (not= old new)
+                     (swap! state assoc :game-status (:status new))))))))))
 
 (defn- on-suspending [{:keys [state]}]
   (gstyle/setStyle (.-canvas (:pixi-app @state)) #js {:display "none"})) 
@@ -132,7 +131,7 @@
         (swap! (:scene-state @state) assoc :status new-game-status))))
   true)
 
-(defn make [mode]
+(defn make [game]
   {:name :solo-play
    :build build
    :on-entering on-entering
@@ -141,12 +140,8 @@
    :on-exiting on-exiting
    :on-keydown on-keydown
    :state (r/atom {:pixi-app nil
+                   :game-config (if (keyword? game) (mode->game-config game) game)
                    :loading? true
-                   :settings {:mode mode
-                              :seed (+ (js/Date.now))
-                              :options (if (not= mode :classic)
-                                         (options-store/get-options :handling)
-                                         {})} 
                    :scene-state nil
                    :game-status :playing})})
 

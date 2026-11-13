@@ -2,11 +2,8 @@
   (:require-macros [cljss.core])
   (:require [cljss.core :as css :refer-macros [defstyles]]
             [reagent.core :as r]
-            [tetris.core.ruleset.classic :refer [make-classic-ruleset]]
-            [tetris.core.ruleset.modern :refer [make-modern-ruleset]]
-            [tetris.core.tick :as tick]
             [tetris.input.keyboard :as keyboard]
-            [tetris.options-store :as options-store]
+            [tetris.scenes.game :refer [make-game-options]]
             [tetris.scenes.render.pixi-app :as app]
             [tetris.scenes.replay :as replay]
             [tetris.screens.screen-navigator :as screen-navigator]
@@ -30,17 +27,11 @@
    "加载中..."])
 
 (defn- ^:async load-scene [state]
-  (let [{:keys [mode seed options replay-events]} (:replay @state)]
-    (keyboard/init)
-    (swap! state assoc :pixi-app (await (app/init)))
-    (.appendChild js/document.body (.-canvas (:pixi-app @state)))
-    (let [game-state (tick/initial-game 
-                       (merge (case mode
-                                :marathon (make-modern-ruleset seed 1)
-                                :classic (make-classic-ruleset seed 0))
-                              options))]
-      (await (replay/start (:pixi-app @state) game-state
-                           (options-store/get-options :piece-style) replay-events)))))
+  (keyboard/init)
+  (swap! state assoc :pixi-app (await (app/init)))
+  (let [{:keys [pixi-app game-config replay]} @state]
+    (.appendChild js/document.body (.-canvas pixi-app))
+    (await (replay/start pixi-app (make-game-options game-config) replay))))
 
 (declare make)
 
@@ -64,8 +55,7 @@
          (case (:id item)
            :continue-replay (do (swap! state assoc :game-status :playing)
                                 (swap! (:scene-state @state) assoc :status :playing))
-           :start-over (screen-navigator/replace-screen!
-                         (make (select-keys (:replay @state) [:mode :seed :replay-events])))
+           :start-over (screen-navigator/replace-screen! (make (:game-config @state) (:replay @state)))
            :exit-replay (screen-navigator/pop-screen!)
            nil))
        :menu-class gameplay-menu-class
@@ -75,22 +65,21 @@
      :else nil)])
 
 (defn- on-entering [{:keys [state]}] 
-  (when (contains? #{:marathon :classic} (get-in @state [:replay :mode]))
-    (let [scene-state-promise (load-scene state)]
-      (.then scene-state-promise
-             (fn [scene-state]
-               (swap! state assoc
-                      :loading? false
-                      :scene-state scene-state)
-               (add-watch
-                 scene-state
-                 :sync
-                 (fn [_key _ref old new]
-                   (let [listen-keys [:status]
-                         old (select-keys old listen-keys)
-                         new (select-keys new listen-keys)]
-                     (when (not= old new)
-                       (swap! state assoc :game-status (:status new)))))))))))
+  (let [scene-state-promise (load-scene state)]
+    (.then scene-state-promise
+           (fn [scene-state]
+             (swap! state assoc
+                    :loading? false
+                    :scene-state scene-state)
+             (add-watch
+               scene-state
+               :sync
+               (fn [_key _ref old new]
+                 (let [listen-keys [:status]
+                       old (select-keys old listen-keys)
+                       new (select-keys new listen-keys)]
+                   (when (not= old new)
+                     (swap! state assoc :game-status (:status new))))))))))
 
 (defn- on-exiting [{:keys [state]}]
   (when (:pixi-app @state)
@@ -110,7 +99,7 @@
         (swap! (:scene-state @state) assoc :status new-game-status))))
   true)
 
-(defn make [replay]
+(defn make [game-config replay]
   {:name :replay
    :build build
    :on-entering on-entering
@@ -118,6 +107,7 @@
    :on-keydown on-keydown
    :state (r/atom {:pixi-app nil
                    :loading? true
+                   :game-config game-config
                    :replay replay
                    :scene-state nil
                    :game-status :playing})})

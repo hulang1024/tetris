@@ -7,6 +7,7 @@
           :40L "40行"
           :classic "经典"
           :marathon "马拉松"
+          :solo-custom "自定义"
           :options "选项"
           :controls-options "控制"
           :custom-controls "控制设置"

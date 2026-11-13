@@ -31,7 +31,7 @@
    "input[type=number],select" {:width "6rem" :padding "0.1rem" :font-size "1rem"}
    "input[type=checkbox]" {:width "1.4rem" :height "1.4rem"}})
 
-(defn- ^:async handle-create-room [room on-done messager]
+(defn- ^:async handle-ok [room on-done messager]
   (let [resp (await (room-api/create-room room))]
     (if (= (:code resp) :ok)
       (on-done (:data resp))
@@ -60,7 +60,7 @@
                  :checked (:public @state)
                  :on-change #(swap! state assoc :public (.. % -target -checked))}]]
      (button {:bg-color :primary
-              :on-click #(handle-create-room @state on-done js/alert)}
+              :on-click #(handle-ok @state on-done js/alert)}
              (i18n/text [:create-room :ok]))
      (button {:on-click #(on-done nil)}
              (i18n/text :cancel))]))

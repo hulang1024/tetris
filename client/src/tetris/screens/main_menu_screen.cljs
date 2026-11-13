@@ -6,6 +6,7 @@
     [tetris.audio :as audio]
     [tetris.online.api :as api]
     [tetris.online.room-api :as room-api]
+    [tetris.online.ws-client :as ws-client]
     [tetris.screens.controls-options-screen :as controls-options-screen]
     [tetris.screens.gameplay-options-screen :as gameplay-options-screen]
     [tetris.screens.login :refer [logic-overlay]]
@@ -13,12 +14,12 @@
     [tetris.screens.multiplayer.room-create :refer [room-create-dialog]]
     [tetris.screens.multiplayer.room-join :refer [room-join-dialog]]
     [tetris.screens.screen-navigator :as screen-navigator]
+    [tetris.screens.solo-custom-game :refer [solo-custom-game-dialog]]
     [tetris.screens.solo-play-screen :as solo-play-screen]
     [tetris.screens.tip-buttons :refer [tip-buttons-overlay]]
     [tetris.screens.user :refer [display-user]]
     [tetris.ui.menu :as menu]
-    [tetris.ui.menu-overlay :refer [menu-overlay]]
-    [tetris.online.ws-client :as ws-client]))
+    [tetris.ui.menu-overlay :refer [menu-overlay]]))
 
 (defstyles menu-item-class [item-id]
   {:margin-top (if (= item-id :back) "1em" 0)
@@ -47,7 +48,8 @@
       (js/alert "未找到房间"))))
 
 (defn- build [{:keys [state]}]
-  (let [{:keys [online-count login-opened room-create-opened room-join-opened menu-state]} @state
+  (let [{:keys [online-count login-opened room-create-opened room-join-opened
+                solo-custom-opened menu-state]} @state
         api-state (api/get-state)
         local-user (api/local-user)]
     [:div
@@ -64,6 +66,12 @@
                              (when room
                                (screen-navigator/push-screen!
                                  (multiplayer-ready-screen/make {:room room :users users}))))])
+     (when solo-custom-opened
+       [solo-custom-game-dialog (fn [game]
+                                  (swap! state assoc :solo-custom-opened false)
+                                  (when game
+                                    (screen-navigator/push-screen!
+                                      (solo-play-screen/make game))))])
      (when room-join-opened
        [room-join-dialog (fn [{:keys [room users]}]
                            (swap! state assoc :room-join-opened false)
@@ -83,6 +91,7 @@
                       (and (= parent :multiplayer) (= (api/get-state) :offline))
                       (swap! state assoc :login-opened true)
 
+                      (= id :solo-custom) (swap! state assoc :solo-custom-opened true)
                       (= id :quick-join-room) (join-room nil true)
                       (= id :join-room) (swap! state assoc :room-join-opened true)
                       (= id :create-room) (swap! state assoc :room-create-opened true)
@@ -143,6 +152,7 @@
                     (menu/item :options nil 3)
                     (menu/item :marathon :solo 1 #(solo-play-screen/make :marathon))
                     (menu/item :classic :solo 2 #(solo-play-screen/make :classic))
+                    (menu/item :solo-custom :solo 3)
                     #_(menu/item :40L :solo 3 {:screen-name :solo :mode :40L})
                     (menu/item :controls-options :options 1 controls-options-screen/make)
                     (menu/item :gameplay-options :options 2 gameplay-options-screen/make)
@@ -151,5 +161,6 @@
                :login-opened false
                :room-create-opened false
                :room-join-opened false
+               :solo-custom-opened false
                :online-count nil
                :timer 0})}))

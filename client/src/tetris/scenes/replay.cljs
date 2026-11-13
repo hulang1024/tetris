@@ -71,17 +71,19 @@
                scene-state))))
   (debug/draw-debug @scene-state)
   (let [{:keys [status game-state replayer game-view]} @scene-state]
-    (when (and (contains? #{:playing :game-over :ended} status)
-               (replay/current-changed? replayer))
+    (when (or (and (= :playing status) (replay/current-changed? replayer))
+              (contains? #{:game-over :ended} status))
       (game-view/render! game-view game-state (:last-input replayer))
       (sound-effect/handle game-state))))
 
-(defn ^:async start [^js app game-state piece-style replay-events]
+(defn ^:async start
+  {:malli/schema [:=> [:cat some? tick/GameOptions some?] :any]}
+  [^js app game-options replay-events]
   (tap> (str "replay events\n" replay-events))
-  (let [options (merge game-state {:piece-style piece-style})]
-    (await (js/Promise.all [(assets/load-piece-styles (:piece-style options))
+  (let [game-state (tick/initial-game game-options)]
+    (await (js/Promise.all [(assets/load-piece-styles (:piece-style game-options))
                             (audio/load-sounds :gameplay)]))
-    (let [view (game-view/create options)]
+    (let [view (game-view/create game-options)]
       (.addChild (.-stage app) (:container view))
       (reset! scene-state
               {:status :playing ; [:enum :playing :pause :game-over]

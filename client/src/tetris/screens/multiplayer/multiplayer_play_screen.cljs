@@ -7,6 +7,7 @@
             [tetris.online.room-api :as room-api]
             [tetris.online.ws-client :as ws-client]
             [tetris.options-store :as options-store]
+            [tetris.scenes.game :as game]
             [tetris.scenes.multiplayer :as multiplayer]
             [tetris.screens.multiplayer.room-manager :as room-manager]
             [tetris.screens.screen-navigator :as screen-navigator]))
@@ -45,9 +46,9 @@
       (swap! (:state screen) assoc :loading? false :room room :users users)
       (let [players (mapv #(room-manager/player-info % users) (:players room))]
         (multiplayer/start!
-          {:game (-> (:game-settings room)
-                     (update :mode keyword)
-                     (update :rs keyword))
+          {:game-config (-> (:game-settings room)
+                            (update :mode keyword)
+                            (update :rs keyword))
            :local-uid (:id (api/local-user))
            :players (filterv #(= (:role %) :player) players)
            :spectators (filterv #(= (:role %) :spectator) players)}))))
@@ -72,7 +73,7 @@
       (multiplayer/on-player-event room player :player-joined)))
   (.then (multiplayer/load! (:piece-styles screen))
          #(room-api/request-start-game
-            {:seed (int (* (rand) 100000))
+            {:seed (game/random-seed)
              :handling (options-store/get-options :handling)
              :piece-style (options-store/get-options :piece-style)})))
 

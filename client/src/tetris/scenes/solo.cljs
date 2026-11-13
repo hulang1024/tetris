@@ -1,16 +1,16 @@
 (ns tetris.scenes.solo
   (:require [tetris.assets :as assets]
+            [tetris.audio :as audio]
             [tetris.core.game :as game]
             [tetris.core.replay :as replay]
             [tetris.core.ruleset.rotation-nrs]
-            [tetris.core.ruleset.rotation-srs]
             [tetris.core.ruleset.rotation-prs]
+            [tetris.core.ruleset.rotation-srs]
             [tetris.core.tick :as tick]
-            [tetris.scenes.debug :as debug]
             [tetris.input.keyboard :as keyboard]
+            [tetris.scenes.debug :as debug]
             [tetris.scenes.render.gameplay.game-view :as game-view]
-            [tetris.scenes.render.gameplay.sound-effect :as sound-effect]
-            [tetris.audio :as audio]))
+            [tetris.scenes.render.gameplay.sound-effect :as sound-effect]))
 
 (defn- initial-scene [game-state]
   {:game-state game-state
@@ -57,11 +57,13 @@
       (game-view/render! game-view game-state input-state)
       (sound-effect/handle game-state))))
 
-(defn ^:async start [^js app game-state piece-style]
-  (let [options (merge game-state {:piece-style piece-style})]
-    (await (js/Promise.all [(assets/load-piece-styles (:piece-style options))
+(defn ^:async start
+  {:malli/schema [:=> [:cat some? tick/GameOptions] :any]}
+  [^js app game-options]
+  (let [game-state (tick/initial-game game-options)]
+    (await (js/Promise.all [(assets/load-piece-styles (:piece-style game-options))
                             (audio/load-sounds :gameplay)]))
-    (let [view (game-view/create options)]
+    (let [view (game-view/create game-options)]
       (.addChild (.-stage app) (:container view))
       (reset! scene-state
               (assoc (initial-scene game-state)
