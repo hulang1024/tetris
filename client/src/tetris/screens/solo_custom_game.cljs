@@ -27,7 +27,7 @@
                               :rs :srs
                               :preview-count 5})]
     [:div {:class (overlay-class)}
-     (custom-game-panel @state false #(reset! state %))
+     (custom-game-panel @state false #(reset! state %) true)
      (button {:bg-color :primary
               :on-click #(on-done @state)}
              (i18n/text :ok))

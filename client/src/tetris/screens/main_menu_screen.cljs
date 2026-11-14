@@ -106,7 +106,8 @@
     (swap! state assoc
            :login-opened false
            :room-create-opened false
-           :room-join-opened false))
+           :room-join-opened false
+           :solo-custom-opened false))
   true)
 
 (defn make []

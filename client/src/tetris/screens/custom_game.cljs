@@ -18,7 +18,7 @@
    "input[type=number],select" {:flex 1 :padding "0.1rem" :font-size "1rem"}
    "input[type=checkbox]" {:width "1.4rem" :height "1.4rem"}})
 
-(defn custom-game-panel [{:keys [mode rs speed-level preview-count] :as state} readonly? on-update]
+(defn custom-game-panel [{:keys [mode rs speed-level preview-count] :as state} readonly? on-update & [auto-focus?]]
   [:div {:class (view-class)}
    [:div {:class (settings-row)}
     [:span {:class "label"} "模式"]
@@ -54,6 +54,7 @@
     [:> Input {:type "number"
                :min ({:classic 0 :modern 1} mode)
                :value speed-level
+               :autoFocus auto-focus?
                :disabled readonly?
                :on-value-change #(on-update (assoc state :speed-level (js/parseInt %1)))}]]
    [:div {:class (settings-row)}

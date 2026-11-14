@@ -99,11 +99,17 @@
                    ::arr-timer 0))
         ;; ARR阶段
         :else
-        (let [t (inc (::arr-timer state))]
-          (if (>= t arr)
-            (-> (handle state command)
-                (assoc ::arr-timer 0))
-            (assoc state ::arr-timer t)))))
+        (if (= arr 0)
+          (loop [state state] ; 瞬移 
+            (let [state (handle state command)]
+              (if (game/find-event :shift-blocked (:events state))
+                state
+                (recur state))))
+          (let [t (inc (::arr-timer state))]
+            (if (>= t arr)
+              (-> (handle state command)
+                  (assoc ::arr-timer 0))
+              (assoc state ::arr-timer t))))))
     state))
 
 (defn- on-soft-drop-pressed [state]
