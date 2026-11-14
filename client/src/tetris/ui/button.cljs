@@ -6,9 +6,9 @@
 
 (def ^:private colors
   {:default "#fafafa"
-   :primary "cornflowerblue"
+   :primary "#8d7de8"
    :second "gold"
-   :danger "pink"
+   :danger "#fa9ecc"
    :success "lightgreen"})
 
 (defstyles button-class [{:keys [bg-color full?]}]

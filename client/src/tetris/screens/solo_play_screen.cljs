@@ -33,19 +33,16 @@
                  :font-size 24}}
    "加载中..."])
 
-(defn update-game-config! [state]
+(defn- ^:async load-scene [state]
+  (keyboard/init)
+  (swap! state assoc :pixi-app (await (app/init)))
   (let [game-config (assoc (:game-config @state)
                            :seed (game/random-seed)
                            :handling (options-store/get-options :handling)
                            :piece-style (options-store/get-options :piece-style))]
-    (swap! state assoc :game-config game-config)))
-
-(defn- ^:async load-scene [state]
-  (keyboard/init)
-  (swap! state assoc :pixi-app (await (app/init)))
-  (update-game-config! state)
-  (.appendChild js/document.body (.-canvas (:pixi-app @state)))
-  (await (solo/start (:pixi-app @state) (make-game-options (:game-config @state)))))
+    (swap! state assoc :game-config game-config)
+    (.appendChild js/document.body (.-canvas (:pixi-app @state)))
+    (await (solo/start (:pixi-app @state) (make-game-options game-config)))))
 
 (declare make)
 
@@ -74,7 +71,7 @@
          (case (:id item)
            :continue-game (do (swap! state assoc :game-status :playing)
                               (swap! (:scene-state @state) assoc :status :playing))
-           :start-over (screen-navigator/replace-screen! (make (update-game-config! state)))
+           :start-over (screen-navigator/replace-screen! (make (:game-config @state)))
            :custom-controls (screen-navigator/push-screen! (controls-options-screen/make))
            :custom-gameplay (screen-navigator/push-screen! (gameplay-options-screen/make true))
            :exit-game (screen-navigator/pop-screen!)

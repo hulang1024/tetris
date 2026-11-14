@@ -8,11 +8,12 @@
 (defn make-game-options [{:keys [seed speed-level rs handling] :as game-config}]
   (merge-with #(or %2 %1)
               (case (:mode game-config)
-                :modern (make-modern-ruleset seed speed-level)
+                :modern (merge (make-modern-ruleset seed speed-level)
+                               handling)
                 :classic (make-classic-ruleset seed speed-level))
-              (select-keys game-config [:preview-count :piece-style])
-              {:rotation-system rs}  
-              handling))
+              (select-keys (update game-config :preview-count min 5)
+                           [:preview-count :piece-style])
+              {:rotation-system rs}))
 
 (defn mode->game-config [mode]
   (case mode

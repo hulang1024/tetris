@@ -25,7 +25,7 @@
    :das-cancel-on-direction-change? false
    :das-cancel-on-lock? false
    :lock-reset-max-times nil
-   :speed-level (min (max speed-level 0) 18)
+   :speed-level (max speed-level 0)
    :das 16
    :arr 6
    :dcd 16

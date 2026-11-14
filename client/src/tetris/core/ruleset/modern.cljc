@@ -26,17 +26,17 @@
    :das-cancel-on-direction-change? true
    :das-cancel-on-lock? true
    :lock-reset-max-times 15
-   :speed-level (min (max 1 speed-level) 16)
+   :speed-level (max 1 speed-level)
    :das 10
    :arr 2
    :dcd 1
    :sdf 24})
 
 (defmethod fall-speed :modern [state]
-  (let [level (dec (min (:speed-level state) 16))
+  (let [level (dec (:speed-level state))
         seconds (math/pow (- 0.8 (* level 0.007)) level)
         frames (* 60 seconds)]
-    (/ 1 frames)))
+    (min 20 (/ 1 frames))))
 
 (defmethod soft-drop-speed :modern [state]
   (* (fall-speed state) (get-in state [:options :sdf])))
