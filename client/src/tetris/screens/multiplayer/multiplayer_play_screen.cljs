@@ -8,7 +8,7 @@
             [tetris.online.ws-client :as ws-client]
             [tetris.options-store :as options-store]
             [tetris.scenes.game :as game]
-            [tetris.scenes.multiplayer :as multiplayer]
+            [tetris.scenes.multiplayer-scene :as multiplayer-scene]
             [tetris.screens.multiplayer.room-manager :as room-manager]
             [tetris.screens.screen-navigator :as screen-navigator]))
 
@@ -45,7 +45,7 @@
     (fn [{:keys [room users]}]
       (swap! (:state screen) assoc :loading? false :room room :users users)
       (let [players (mapv #(room-manager/player-info % users) (:players room))]
-        (multiplayer/start!
+        (multiplayer-scene/start!
           {:game-config (-> (:game-settings room)
                             (update :mode keyword)
                             (update :rs keyword))
@@ -61,17 +61,17 @@
                                   (= (keyword (:state %)) :inprogress))
                             (:players room)))
         (screen-navigator/pop-screen!))
-      (multiplayer/on-player-event room player :player-game-quitted)))
+      (multiplayer-scene/on-player-event room player :player-game-quitted)))
   (ws-client/subscribe!
     :multiplayer :player-left
     (fn [{:keys [room player]}]
       (swap! (:state screen) assoc :room room)
-      (multiplayer/on-player-event room player :player-left)))
+      (multiplayer-scene/on-player-event room player :player-left)))
   (ws-client/subscribe!
     :multiplayer :player-joined
     (fn [{:keys [room player]}]
-      (multiplayer/on-player-event room player :player-joined)))
-  (.then (multiplayer/load! (:piece-styles screen))
+      (multiplayer-scene/on-player-event room player :player-joined)))
+  (.then (multiplayer-scene/load! (:piece-styles screen))
          #(room-api/request-start-game
             {:seed (game/random-seed)
              :handling (options-store/get-options :handling)
@@ -88,7 +88,7 @@
    :on-entering on-entering
    :on-exiting (fn []
                  (ws-client/unsubscribe! :multiplayer :all)
-                 (multiplayer/destroy!)
+                 (multiplayer-scene/destroy!)
                  (room-api/quit-game))
    :on-keydown on-keydown
    :piece-styles (assets/get-piece-styles) 

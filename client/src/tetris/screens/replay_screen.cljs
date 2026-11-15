@@ -5,7 +5,7 @@
             [tetris.input.keyboard :as keyboard]
             [tetris.scenes.game :refer [make-game-options]]
             [tetris.scenes.render.pixi-app :as app]
-            [tetris.scenes.replay :as replay]
+            [tetris.scenes.replay-scene :as replay-scene]
             [tetris.screens.screen-navigator :as screen-navigator]
             [tetris.ui.menu :as menu]
             [tetris.ui.menu-overlay :refer [menu-overlay]]))
@@ -31,7 +31,7 @@
   (swap! state assoc :pixi-app (await (app/init)))
   (let [{:keys [pixi-app game-config replay]} @state]
     (.appendChild js/document.body (.-canvas pixi-app))
-    (await (replay/start pixi-app (make-game-options game-config) replay))))
+    (await (replay-scene/start pixi-app (make-game-options game-config) replay))))
 
 (declare make)
 

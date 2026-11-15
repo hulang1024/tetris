@@ -1,8 +1,8 @@
-(ns tetris.scenes.solo
+(ns tetris.scenes.solo-scene
   (:require [tetris.assets :as assets]
             [tetris.audio :as audio]
             [tetris.core.game :as game]
-            [tetris.core.replay :as replay]
+            [tetris.scenes.replay :as replay]
             [tetris.core.ruleset.rotation-nrs]
             [tetris.core.ruleset.rotation-prs]
             [tetris.core.ruleset.rotation-srs]

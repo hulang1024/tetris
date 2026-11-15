@@ -1,34 +1,33 @@
 (ns tetris.online.room-api 
   (:require
-    [tetris.online.api :as api]))
+    [tetris.online.api :refer [post]]))
 
 (defn leave-room []
-  (api/post "/room/leave-room"))
+  (post "/room/leave-room"))
 
 (defn toggle-ready []
-  (api/post "/room/toggle-ready"))
+  (post "/room/toggle-ready"))
 
 (defn change-slot [slot]
-  (api/post "/room/change-slot" {:slot slot}))
+  (post "/room/change-slot" {:slot slot}))
 
 (defn change-role [role]
-  (api/post "/room/change-role" {:role role}))
+  (post "/room/change-role" {:role role}))
 
 (defn change-room-settings [settings]
-  (api/post "/room/change-room-settings" settings))
+  (post "/room/change-room-settings" settings))
 
 (defn enter-game [force?]
-  (api/post "/room/enter-game" {:force-start force?}))
+  (post "/room/enter-game" {:force-start force?}))
 
 (defn quit-game []
-  (api/post "/room/quit-game"))
+  (post "/room/quit-game"))
 
 (defn request-start-game [game-config]
-  (api/post "/room/request-start-game" game-config))
+  (post "/room/request-start-game" game-config))
 
 (defn create-room [room]
-  (api/post "/room/create-room" room))
+  (post "/room/create-room" room))
 
 (defn join-room [room-id & [quick-join?]]
-  (api/post "/room/join-room"
-            (if quick-join? {:quick_join true} {:room_id room-id})))
+  (post "/room/join-room" (if quick-join? {:quick_join true} {:room_id room-id})))

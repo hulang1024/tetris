@@ -59,12 +59,6 @@
       (swap! state assoc :state :offline))
     resp))
 
-(defn register! [username password]
-  (post "/register" {:username username :password password}))
-
-(defn get-online-stats []
-  (get! "/online-stats" nil))
-
 (defn- ^:async try-auto-login []
   (let [{:keys [auto-login-enabled username password]} (options-store/get-options)]
     (when (and auto-login-enabled username password)

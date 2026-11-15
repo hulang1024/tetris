@@ -1,4 +1,4 @@
-(ns tetris.core.replay
+(ns tetris.scenes.replay
   (:require [clojure.math :as math]
             [tetris.core.input :as input]))
 
@@ -10,7 +10,7 @@
       (conj recorder [frame pressed-actions])
       recorder)))
 
-(defn ->input-states [events]
+(defn- ->input-states [events]
   (let [xs (reduce
              (fn [xs n]
                (let [[events input] (peek xs)

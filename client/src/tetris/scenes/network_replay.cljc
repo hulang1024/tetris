@@ -1,4 +1,4 @@
-(ns tetris.online.network-replay 
+(ns tetris.scenes.network-replay 
   (:require
     [tetris.core.input :as input]))
 

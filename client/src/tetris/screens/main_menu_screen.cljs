@@ -6,6 +6,7 @@
     [tetris.audio :as audio]
     [tetris.online.api :as api]
     [tetris.online.room-api :as room-api]
+    [tetris.online.user-api :as user-api]
     [tetris.online.ws-client :as ws-client]
     [tetris.screens.controls-options-screen :as controls-options-screen]
     [tetris.screens.gameplay-options-screen :as gameplay-options-screen]
@@ -114,7 +115,7 @@
   (let [load-online-stats
         (fn [{:keys [state]}]
           (when (= (api/get-state) :online)
-            (.then (api/get-online-stats)
+            (.then (user-api/get-online-stats)
                    (fn [{{:keys [online-count]} :data}]
                      (swap! state assoc :online-count online-count)))))
         start-poll-timer

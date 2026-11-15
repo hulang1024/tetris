@@ -9,7 +9,7 @@
             [tetris.scenes.game :as game :refer [make-game-options
                                                  mode->game-config]]
             [tetris.scenes.render.pixi-app :as app]
-            [tetris.scenes.solo :as solo]
+            [tetris.scenes.solo-scene :as solo-scene]
             [tetris.screens.controls-options-screen :as controls-options-screen]
             [tetris.screens.gameplay-options-screen :as gameplay-options-screen]
             [tetris.screens.replay-screen :as replay-screen]
@@ -42,7 +42,7 @@
                            :piece-style (options-store/get-options :piece-style))]
     (swap! state assoc :game-config game-config)
     (.appendChild js/document.body (.-canvas (:pixi-app @state)))
-    (await (solo/start (:pixi-app @state) (make-game-options game-config)))))
+    (await (solo-scene/start (:pixi-app @state) (make-game-options game-config)))))
 
 (declare make)
 
@@ -111,7 +111,7 @@
 
 (defn- on-exiting [{:keys [state]}]
   (when (:pixi-app @state)
-    (solo/destroy)
+    (solo-scene/destroy)
     (.destroy (:pixi-app @state) #js {:removeView true})
     (swap! state assoc :pixi-app nil)))
 

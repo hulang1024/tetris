@@ -6,8 +6,9 @@
     [reagent.core :as r]
     [tetris.i18n.core :as i18n]
     [tetris.online.api :as api]
-    [tetris.ui.button :refer [button]]
-    [tetris.options-store :as options-store]))
+    [tetris.online.user-api :as user-api]
+    [tetris.options-store :as options-store]
+    [tetris.ui.button :refer [button]]))
 
 (defstyles logic-overlay-class []
   {:position "fixed"
@@ -64,7 +65,7 @@
                 (i18n/text [:login-message :failed]))))))
 
 (defn- ^:async handle-register [{:keys [username password]} on-success messager]
-  (let [resp (await (api/register! username password))]
+  (let [resp (await (user-api/register username password))]
     (if (= (:code resp) :ok)
       (on-success (:data resp))
       (messager
