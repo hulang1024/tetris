@@ -207,15 +207,13 @@
         (select-keys options game-option-keys)))))
 
 (defn step
-  {:malli/schema [:=> [:cat State input/InputState] game/State]}
+  {:malli/schema [:=> [:cat State input/InputState] State]}
   [state input]
   (let [{:keys [pressed-buttons just-pressed-buttons]} input
         {:keys [hard-drop-allowed? hold-allowed? rotate-180-allowed?]} (:options state)
         just-pressed-buttons (set just-pressed-buttons)
         state (-> (update state :frame inc)
                   (assoc ::commands []))]
-    (when (get-in state [:options :debug?])
-      (tap> (str "tick - " (:frame state))))
     (case (::phase state)
       :controlling
       (let [state (case (last (filter #{:move-left :move-right} pressed-buttons))

@@ -34,54 +34,30 @@
 (defn lock-piece
   {:malli/schema [:=> [:cat Board Piece :int :int] Board]}
   [board piece row col]
-  (let [shape (rs/shape piece)
-        rows (count shape)
-        cols (count (first shape))
-        cell-indices (rs/cell-indices piece)]
-    (vec (map-indexed
-           (fn [r xs]
-             (if (<= row r (dec (+ row rows)))
-               (vec (map-indexed
-                      (fn [c v]
-                        (if (<= col c (dec (+ col cols)))
-                          (let [cr (- r row)
-                                cc (- c col)
-                                cell-index (first (keep-indexed
-                                                    (fn [i v] (when (= v [cr cc]) i))
-                                                    cell-indices))]
-                            (if cell-index
-                              {:id (+ (:id piece) cell-index)
-                               :kind (:kind piece)}
-                              v))
-                          v))
-                      xs))
-               xs))
-           board))))
+  (reduce (fn [board [i [r c]]]
+            (assoc-in board [(+ row r) (+ col c)] {:id (+ (:id piece) i) :kind (:kind piece)}))
+          board
+          (map-indexed vector (rs/cell-indices piece))))
 
 (defn find-full-row-indices
   {:malli/schema [:=> [:cat Board] [:set :int]]}
   [board]
-  (set (for [[r row] (map-indexed vector board)
-             :when (every? some? row)]
-         r)))
+  (->> board (keep-indexed (fn [r xs] (when (every? some? xs) r))) set))
 
 (defn find-cells-to-clear
   {:malli/schema [:=> [:cat Board [:set :int]] [:vector Cell]]}
   [board full-row-indices]
-  (vec (mapcat identity
-               (keep-indexed
-                 (fn [r xs] (when (contains? full-row-indices r) xs))
-                 board))))
+  (->> board
+       (keep-indexed (fn [r xs] (when (contains? full-row-indices r) xs)))
+       (mapcat identity)
+       vec))
 
 (defn clear-rows
   {:malli/schema [:=> [:cat Board [:set :int]] Board]}
   [board row-indices]
-  (let [rest-lines
-        (filter seq (map-indexed
-                      (fn [r xs]
-                        (if (contains? row-indices r) nil xs))
-                      board))]
-    (into (vec (repeat (count row-indices) empty-line)) rest-lines)))
+  (->> board
+       (keep-indexed (fn [r xs] (when-not (contains? row-indices r) xs)))
+       (into (vec (repeat (count row-indices) empty-line)))))
 
 (defn lock-out?
   {:malli/schema [:=> [:cat :int] :boolean]}

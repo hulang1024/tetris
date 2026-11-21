@@ -64,6 +64,7 @@
    [:col :int]
    [:current [:maybe Piece]]
    [:hold [:maybe Piece]]
+   [:held? :boolean]
    [:next-queue [:seqable Piece]]
    [:next-piece-id [:int {:min 1}]]
    [:lines-cleared [:int {:min 0}]]
@@ -83,7 +84,6 @@
   (let [state (update state :event-id inc)
         event (-> (if (keyword? event) {:type event} event)
                   (assoc :id (:event-id state)))]
-    (tap> (str "game - event " event))
     (update state :events conj event)))
 
 (defn- ghost-position [board piece row col]
@@ -271,7 +271,6 @@
 (defn handle-command
   {:malli/schema CommandHandler}
   [state command]
-  (tap> (str "game - command " command))
   (-> (case command
         :fall (try-move-down state :fallen)
         :move-down (try-move-down state :moved-down)
